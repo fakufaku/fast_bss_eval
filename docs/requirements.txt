@@ -1,0 +1,3 @@
+sphinx
+karma-sphinx-theme
+sphinx-autodoc-typehints
