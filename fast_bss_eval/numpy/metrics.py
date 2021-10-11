@@ -2,6 +2,7 @@ import math
 from typing import Optional, Tuple
 
 import numpy as np
+from scipy import fft
 
 from .cgd import block_toeplitz_conjugate_gradient, toeplitz_conjugate_gradient
 from .helpers import (
@@ -51,21 +52,21 @@ def compute_stats(
     max_len = max(x.shape[-1], y.shape[-1])
     n_fft = 2 ** math.ceil(math.log2(x.shape[-1] + max_len - 1))
 
-    X = np.fft.rfft(x, n=n_fft, axis=-1)
-    Y = np.fft.rfft(y, n=n_fft, axis=-1)
+    X = fft.rfft(x, n=n_fft, axis=-1)
+    Y = fft.rfft(y, n=n_fft, axis=-1)
 
     # autocorrelation function
-    acf = np.fft.irfft(X.real ** 2 + X.imag ** 2, n=n_fft)
+    acf = fft.irfft(X.real ** 2 + X.imag ** 2, n=n_fft)
 
     # cross-correlation
     if pairwise:
         XY = np.einsum("...cn,...dn->...cnd", X.conj(), Y)
-        xcorr = np.fft.irfft(XY, n=n_fft, axis=-2)
+        xcorr = fft.irfft(XY, n=n_fft, axis=-2)
         return acf[..., :length], xcorr[..., :length, :]
 
     else:
         XY = X.conj() * Y
-        xcorr = np.fft.irfft(XY, n=n_fft, axis=-1)
+        xcorr = fft.irfft(XY, n=n_fft, axis=-1)
         return acf[..., :length], xcorr[..., :length]
 
 
@@ -99,17 +100,17 @@ def compute_stats_2(
     max_len = max(x.shape[-1], y.shape[-1])
     n_fft = 2 ** math.ceil(math.log2(x.shape[-1] + max_len - 1))
 
-    X = np.fft.rfft(x, n=n_fft, axis=-1)
-    Y = np.fft.rfft(y, n=n_fft, axis=-1)
+    X = fft.rfft(x, n=n_fft, axis=-1)
+    Y = fft.rfft(y, n=n_fft, axis=-1)
 
     # autocorrelation function
     prod = np.einsum("...cn,...dn->...ncd", X, X.conj())
-    acf = np.fft.irfft(prod, n=n_fft, axis=-3)
+    acf = fft.irfft(prod, n=n_fft, axis=-3)
     acf = np.concatenate([acf[..., :length, :, :], acf[..., -length:, :, :]], axis=-3)
 
     # cross-correlation
     XY = np.einsum("...cn,...dn->...ncd", X.conj(), Y)
-    xcorr = np.fft.irfft(XY, n=n_fft, axis=-3)
+    xcorr = fft.irfft(XY, n=n_fft, axis=-3)
     xcorr = xcorr[..., :length, :, :]
 
     return acf, xcorr
