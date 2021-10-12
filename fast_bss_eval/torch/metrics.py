@@ -117,7 +117,7 @@ def compute_stats_2(
     return acf, xcorr
 
 
-def ci_sdr_loss(
+def sdr_loss(
     est: torch.Tensor,
     ref: torch.Tensor,
     filter_length: Optional[int] = 512,
@@ -128,7 +128,7 @@ def ci_sdr_loss(
     pairwise: Optional[bool] = False,
 ) -> torch.Tensor:
     """
-    Compute the negative convolution invariant signal-to-distortion ratio (CI-SDR).
+    Compute the negative signal-to-distortion ratio (SDR).
 
     The order of est/ref follows the convention of pytorch loss functions
     (i.e., est first).
@@ -153,19 +153,19 @@ def ci_sdr_loss(
         to computation of the metrics (default: ``False``)
     clamp_db: bool, optional
         If provided, the resulting metrics are clamped to be in the range ``[-clamp_db, clamp_db]``
-    pairwise: bool, optional
-        If set to True, the metrics are computed for every est/ref signals pair (default: False).
-        When set to False, it is expected that ``n_channels_ref == n_channels_est``.
     load_diag: float, optional
         If provided, this small value is added to the diagonal coefficients of
         the system metrics when solving for the filter coefficients.
         This can help stabilize the metric in the case where some of the reference
         signals may sometimes be zero
+    pairwise: bool, optional
+        If set to True, the metrics are computed for every est/ref signals pair (default: False).
+        When set to False, it is expected that ``n_channels_ref == n_channels_est``.
 
     Returns
     -------
     neg_cisdr: torch.Tensor
-        The negative CI-SDR of the input signal. The returned tensor has shape
+        The negative SDR of the input signal. The returned tensor has shape
         (..., n_channels_est) if ``pairwise == False`` and
         (..., n_channels_ref, n_channels_est) if ``pairwise == True``.
     """
@@ -207,7 +207,7 @@ def ci_sdr_loss(
     return neg_cisdr
 
 
-def pairwise_ci_sdr_loss(
+def pairwise_sdr_loss(
     est: torch.Tensor,
     ref: torch.Tensor,
     filter_length: Optional[int] = 512,
@@ -217,9 +217,9 @@ def pairwise_ci_sdr_loss(
     load_diag: Optional[float] = None,
 ) -> torch.Tensor:
     """
-    Compute the negative convolution invariant signal-to-distortion ratio (CI-SDR).
+    Compute the negative signal-to-distortion ratio (SDR).
 
-    This function computes the CI-SDR for all pairs of est/ref signals.
+    This function computes the SDR for all pairs of est/ref signals.
 
     The order of est/ref follows the convention of pytorch loss functions
     (i.e., est first).
@@ -253,9 +253,9 @@ def pairwise_ci_sdr_loss(
     Returns
     -------
     neg_cisdr: torch.Tensor, (..., n_channels_ref, n_channels_est)
-        The negative CI-SDR of the input signal
+        The negative SDR of the input signal
     """
-    return ci_sdr_loss(
+    return sdr_loss(
         est,
         ref,
         filter_length=filter_length,
@@ -267,7 +267,7 @@ def pairwise_ci_sdr_loss(
     )
 
 
-def ci_sdr(
+def sdr(
     ref: torch.Tensor,
     est: torch.Tensor,
     filter_length: Optional[int] = 512,
@@ -279,9 +279,9 @@ def ci_sdr(
     change_sign: Optional[bool] = False,
 ) -> torch.Tensor:
     """
-    Compute the convolution invariant signal-to-distortion ratio (CI-SDR).
+    Compute the signal-to-distortion ratio (SDR) only.
 
-    This function computes the CI-SDR for all pairs of est/ref signals and finds the
+    This function computes the SDR for all pairs of est/ref signals and finds the
     permutation maximizing the SDR.
 
     The order of ref/est follows the convention of bss_eval (i.e., ref first).
@@ -315,19 +315,19 @@ def ci_sdr(
         If set to True, the optimal permutation of the estimated signals is
         also returned (default: ``False``)
     change_sign: bool, optional
-        If set to True, the sign is flipped and the negative CI-SDR is returned
+        If set to True, the sign is flipped and the negative SDR is returned
         (default: ``False``)
 
     Returns
     -------
     cisdr: torch.Tensor, (..., n_channels_est)
-        The CI-SDR of the input signal
+        The SDR of the input signal
     perm: torch.Tensor, (..., n_channels_est), optional
         The index of the corresponding reference signal.
         Only returned if ``return_perm == True``
     """
 
-    neg_sdr = ci_sdr_loss(
+    neg_sdr = sdr_loss(
         est,
         ref,
         filter_length=filter_length,
@@ -395,7 +395,7 @@ def square_cosine_metrics(
     Returns
     -------
     neg_cisdr: torch.Tensor, (..., n_channels_ref, n_channels_est)
-        The negative CI-SDR of the input signal
+        The negative SDR of the input signal
     """
 
     if zero_mean:

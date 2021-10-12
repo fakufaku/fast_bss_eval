@@ -10,7 +10,8 @@ Welcome to fast_bss_eval's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-.. autofunction:: fast_bss_eval.bss_eval_sources
+.. automodule:: fast_bss_eval
+   :members:
 
 
 
