@@ -1,3 +1,87 @@
+#
+#
+"""
+This library implements the *bss_eval* metrics for the evaluation of blind
+source separation (BSS) algorithms [1]_.  The implementation details and
+benchmarks against other publicly available implementations are also available [2]_.
+
+Quick start
+-----------
+
+The package can be installed from pip. At a minimum, it requires to have ``numpy``/``scipy`` installed.
+To work with torch tensors, ``pytorch`` should also be installed obviously.
+
+..  code-block:: shell
+
+    pip install fast_bss_eval
+
+Assuming you have multichannel signals for the estmated and reference sources
+stored in wav format files names ``my_estimate_file.wav`` and
+``my_reference_file.wav``, respectively, you can quickly evaluate the bss_eval
+metrics as follows.
+
+.. code-block:: python
+
+    from scipy.io import wavfile
+    import fast_bss_eval
+
+    # open the files, we assume the sampling rate is known
+    # to be the same
+    fs, ref = wavfile.read("my_reference_file.wav")
+    _, est = wavfile.read("my_estimate_file.wav")
+
+    # compute the metrics
+    sdr, sir, sar, perm = fast_bss_eval.bss_eval_sources(ref.T, est.T)
+
+There are three functions implemented, :func:`fast_bss_eval.bss_eval_sources`,
+:func:`fast_bss_eval.sdr`, and :func:`fast_bss_eval.sdr_loss`.
+
+Benchmark
+---------
+
+Average execution time on a dataset of multichannel signals with 2, 3, and 4
+channels.
+
+.. figure:: figures/channels_vs_runtime.png
+    :alt: runtime benchmark result
+
+bss_eval metrics theory
+------------------------
+
+Basics
+~~~~~~
+
+TBA.
+
+.. figure:: figures/bss_eval_metrics_projections.png
+    :scale: 50 %
+    :alt: figure describing how bss_eval metrics are derived
+
+The scale-invariant SDR is equivalent to using a distortion filter length of 1
+[3]_.  The use of longer filters has been shown to be beneficial when training
+neural networks to assist beamforming algorithms [2]_ [4]_.
+
+Iterative solver for the disortion filters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use the ``use_cg_iter=10`` option when using any of the functions.
+
+References
+----------
+
+.. [1] E. Vincent, R. Gribonval, and C. Fevotte, *Performance measurement in
+    blind audio source separation*, IEEE Trans. Audio Speech Lang. Process., vol.
+    14, no. 4, pp. 1462–1469, Jun. 2006.
+
+.. [2] R. Scheibler, *SDR &mdash; Medium Rare with Fast Computations*, arXiv, 2021.
+
+.. [3] J. Le Roux, S. Wisdom, H. Erdogan, and J. R. Hershey, *SDR &mdash; Half-baked or Well Done?*,
+    In Proc. IEEE ICASSP, Brighton, UK, May 2019.
+
+.. [4] C. Boeddeker et al., *Convolutive transfer function invariant SDR training criteria
+    for multi-channel reverberant speech separation*, in Proc. IEEE ICASSP, Toronto,
+    CA, Jun. 2021, pp. 8428–8432.
+"""
 from typing import Optional, Union, Tuple
 
 import numpy as np

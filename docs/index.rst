@@ -11,9 +11,15 @@ Welcome to fast_bss_eval's documentation!
    :caption: Contents:
 
 .. automodule:: fast_bss_eval
-   :members:
 
+API
+~~~
 
+.. autofunction:: fast_bss_eval.bss_eval_sources
+
+.. autofunction:: fast_bss_eval.sdr
+
+.. autofunction:: fast_bss_eval.sdr_loss
 
 Indices and tables
 ==================
