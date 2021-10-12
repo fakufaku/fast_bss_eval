@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 import torch
 import mir_eval
@@ -83,57 +84,78 @@ def compare_to_mir_eval(
             ref, est, **bss_eval_kwargs
         )
 
+        sdr_only = fast_bss_eval.sdr(ref, est, **bss_eval_kwargs)
+
         sdr = to_numpy(sdr)
         sir = to_numpy(sir)
         sar = to_numpy(sar)
+        sdr_only = to_numpy(sdr_only)
 
         error_sdr = np.max(np.abs(sdr - me_sdr))
         error_sir = np.max(np.abs(sir - me_sir))
         error_sar = np.max(np.abs(sar - me_sar))
+        error_sdr_only = np.max(np.abs(sdr_only - me_sdr))
 
         if verbose:
-            print(error_sdr, error_sir, error_sar)
+            print(error_sdr, error_sir, error_sar, error_sdr_only)
 
         assert error_sdr < tol
         assert error_sir < tol
         assert error_sar < tol
+        assert error_sdr_only < tol
 
 
-def test_accuracy():
+@pytest.mark.parametrize(
+    "is_fp32,is_torch,use_cg_iter,tol",
+    [
+        (False, False, None, 1e-5),
+        (True, False, None, 1e-2),
+        (False, True, None, 1e-5),
+        (True, True, None, 1e-2),
+        (False, False, 20, 1e-1),
+        (True, False, 20, 1e-1),
+        (False, True, 20, 1e-1),
+        (True, True, 20, 1e-1),
+    ],
+)
+def test_accuracy(is_fp32, is_torch, use_cg_iter, tol):
+    """
+    Tests that the output produced for random signals is
+    reasonnably close to that produced by mir_eval
+
+    Tests both ``bss_eval_sources`` and ``sdr``
+    """
     np.random.seed(1)
     n = 1600
     c = 2
-    tol = 1e-1
     n_repeat = 10
-    use_cg_iter = 30
     verbose = True
 
-    # numpy / fp32
-    compare_to_mir_eval(c, n, False, False, tol, n_repeat, verbose=verbose)
-    # numpy / fp64
-    compare_to_mir_eval(c, n, True, False, tol, n_repeat, verbose=verbose)
-    # numpy / fp32
-    compare_to_mir_eval(c, n, False, True, tol, n_repeat, verbose=verbose)
-    # numpy / fp32
-    compare_to_mir_eval(c, n, True, True, tol, n_repeat, verbose=verbose)
-
-    # numpy / fp32
     compare_to_mir_eval(
-        c, n, False, False, tol, n_repeat, verbose=verbose, use_cg_iter=use_cg_iter
-    )
-    # numpy / fp64
-    compare_to_mir_eval(
-        c, n, True, False, tol, n_repeat, verbose=verbose, use_cg_iter=use_cg_iter
-    )
-    # numpy / fp32
-    compare_to_mir_eval(
-        c, n, False, True, tol, n_repeat, verbose=verbose, use_cg_iter=use_cg_iter
-    )
-    # numpy / fp32
-    compare_to_mir_eval(
-        c, n, True, True, tol, n_repeat, verbose=verbose, use_cg_iter=use_cg_iter
+        c, n, is_fp32, is_torch, tol, n_repeat, verbose=verbose, use_cg_iter=use_cg_iter
     )
 
 
-if __name__ == "__main__":
-    test_accuracy()
+@pytest.mark.parametrize(
+    "is_torch,is_fp32,expected_dtype",
+    [
+        (False, False, np.float64),
+        (True, False, torch.float64),
+        (False, True, np.float32),
+        (True, True, torch.float32),
+    ],
+)
+def test_dtype(is_torch, is_fp32, expected_dtype):
+    """
+    Tests that the type of the output is the same as that of the input
+    """
+    b = 1  # batch
+    c = 2  # channels
+    n = 16000  # samples
+
+    ref, est = _random_input_pairs(b, c, n, is_torch=is_torch, is_fp32=is_fp32)
+
+    sdr, sir, sar, _ = fast_bss_eval.bss_eval_sources(ref, est)
+    assert sdr.dtype == expected_dtype
+    assert sir.dtype == expected_dtype
+    assert sar.dtype == expected_dtype
