@@ -1,10 +1,12 @@
 fast\_bss\_eval
 ==============
 
-> Do you have a zillion BSS audio files to process and it is taking days ?
-> Is your simulation never ending ?
->
-> Fear no more! `fast_bss_eval` is here to help **you!**
+---------
+Do you have a zillion BSS audio files to process and it is taking days ?
+Is your simulation never ending ?
+
+Fear no more! `fast_bss_eval` is here to help **you!**
+---------
 
 A package with a fast implementation of the bss\_eval metrics for the
 evaluation of blind source separation.  Our implementation of the bss\_eval
