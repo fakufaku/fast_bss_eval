@@ -29,10 +29,10 @@ def _random_input_pairs(
     is_fp32=False,
     is_torch=False,
 ):
-    ref = np.random.randn(b, c, n)
+    ref = np.random.randn(nbatch, nchan, nsamples)
     est = (
-        np.eye(c) + matrix_factor * np.random.randn(b, c, c)
-    ) @ ref + noise_factor * np.random.randn(b, c, n)
+        np.eye(nchan) + matrix_factor * np.random.randn(nbatch, nchan, nchan)
+    ) @ ref + noise_factor * np.random.randn(nbatch, nchan, nsamples)
 
     if is_fp32:
         est = est.astype(np.float32)
@@ -57,42 +57,83 @@ def _as(to_fp32=False, to_torch=False, *args):
         return args
 
 
-if __name__ == "__main__":
+def compare_to_mir_eval(
+    n_chan,
+    n_samples,
+    is_fp32,
+    is_torch,
+    tol,
+    n_repeat,
+    verbose=False,
+    **bss_eval_kwargs
+):
 
-    n = 16000 * 5
+    for n in range(n_repeat):
+
+        _ref, _est = _random_input_pairs(1, n_chan, n_samples)
+
+        # reference is mir_eval
+        me_sdr, me_sir, me_sar, _ = mir_eval.separation.bss_eval_sources(
+            _ref[0], _est[0]
+        )
+
+        ref, est = _as(is_fp32, is_torch, _ref, _est)
+
+        sdr, sir, sar, perm = fast_bss_eval.bss_eval_sources(
+            ref, est, **bss_eval_kwargs
+        )
+
+        sdr = to_numpy(sdr)
+        sir = to_numpy(sir)
+        sar = to_numpy(sar)
+
+        error_sdr = np.max(np.abs(sdr - me_sdr))
+        error_sir = np.max(np.abs(sir - me_sir))
+        error_sar = np.max(np.abs(sar - me_sar))
+
+        if verbose:
+            print(error_sdr, error_sir, error_sar)
+
+        assert error_sdr < tol
+        assert error_sir < tol
+        assert error_sar < tol
+
+
+def test_accuracy():
+    np.random.seed(1)
+    n = 1600
     c = 2
-    b = 1
+    tol = 1e-1
+    n_repeat = 10
+    use_cg_iter = 30
+    verbose = True
 
-    # reference is numpy 64 bits
-    _ref, _est = _random_input_pairs(b, c, n)
+    # numpy / fp32
+    compare_to_mir_eval(c, n, False, False, tol, n_repeat, verbose=verbose)
+    # numpy / fp64
+    compare_to_mir_eval(c, n, True, False, tol, n_repeat, verbose=verbose)
+    # numpy / fp32
+    compare_to_mir_eval(c, n, False, True, tol, n_repeat, verbose=verbose)
+    # numpy / fp32
+    compare_to_mir_eval(c, n, True, True, tol, n_repeat, verbose=verbose)
 
-    # reference is mir_eval
-    me_sdr, me_sir, me_sar, _ = mir_eval.separation.bss_eval_sources(_ref[0], _est[0])
+    # numpy / fp32
+    compare_to_mir_eval(
+        c, n, False, False, tol, n_repeat, verbose=verbose, use_cg_iter=use_cg_iter
+    )
+    # numpy / fp64
+    compare_to_mir_eval(
+        c, n, True, False, tol, n_repeat, verbose=verbose, use_cg_iter=use_cg_iter
+    )
+    # numpy / fp32
+    compare_to_mir_eval(
+        c, n, False, True, tol, n_repeat, verbose=verbose, use_cg_iter=use_cg_iter
+    )
+    # numpy / fp32
+    compare_to_mir_eval(
+        c, n, True, True, tol, n_repeat, verbose=verbose, use_cg_iter=use_cg_iter
+    )
 
-    sdrs = []
-    sirs = []
-    sars = []
 
-    for is_fp32 in [False, True]:
-        for is_torch in [False, True]:
-            ref, est = _as(is_fp32, is_torch, _ref, _est)
-            sdr, sir, sar, perm = fast_bss_eval.bss_eval_sources(ref, est)
-            sdrs.append(sdr)
-            sirs.append(sir)
-            sars.append(sar)
-
-    errors_sdr = max_error([me_sdr,] + sdrs)
-    errors_sir = max_error([me_sir,] + sirs)
-    errors_sar = max_error([me_sar,] + sars)
-
-    print("Error SDR")
-    print(errors_sdr)
-    print()
-
-    print("Error SIR")
-    print(errors_sir)
-    print()
-
-    print("Error SAR")
-    print(errors_sar)
-    print()
+if __name__ == "__main__":
+    test_accuracy()
