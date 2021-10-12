@@ -14,6 +14,8 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+import re
+
 
 # -- Project information -----------------------------------------------------
 
@@ -30,7 +32,12 @@ release = "0.0.1"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon", "sphinx_autodoc_typehints"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",
+    "sphinx.ext.mathjax",
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -52,3 +59,17 @@ html_theme = "karma_sphinx_theme"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+
+# mathjax_path = (
+# "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+# )
+
+# mathjax3_config = {"TeX": {"Macros": {"RR": "{\\bf R}", "bold": ["{\\bf #1}", 1]}}}
+
+mathjax3_config = {
+    "TeX": {
+        "Macros": {"vr": r"\boldsymbol{r}"},
+        "packages": {"[+]": ["newcommand"]},
+    },
+    "loader": {"load": ["[tex]/newcommand"]},
+}  # Create empty

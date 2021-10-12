@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""
+r"""
 This library implements the *bss_eval* metrics for the evaluation of blind
 source separation (BSS) algorithms [1]_.  The implementation details and
 benchmarks against other publicly available implementations are also available [2]_.
@@ -66,21 +66,81 @@ channels.
 bss_eval metrics theory
 ------------------------
 
-Basics
-~~~~~~
+:math:`\newcommand{\vs}{\boldsymbol{s}}\newcommand{\vshat}{\hat{\vs}}\newcommand{\vb}{\boldsymbol{b}}`
+We consider the case where we have :math:`M` estimated signals :math:`\vshat_m`.
+Each contains a convolutional mixture of :math:`K` reference signals
+:math:`\vs_k` and an additive noise component :math:`\vb_m`,
 
-TBA.
+.. math::
+
+    \newcommand{\vh}{\boldsymbol{h}}
+    \newcommand{\vg}{\boldsymbol{g}}
+
+    \vshat_m = \sum\nolimits_{k}\vh_{mk} \star \vs_k + \vb_m,
+    \quad m=1,\ldots,M,
+
+where :math:`\vshat_m`, :math:`\vs_k`, and :math:`\vb_m` are all real vectors
+of length :math:`T`.  The length of the impulse responses :math:`\vh_{mk}` is
+assumed to be short compared to :math:`T`.  For simplicity, the convolution
+operation here includes truncation to size :math:`T`.  In most cases, the
+number of estimates and references is the same, i.e. :math:`M=K`.  We keep them
+distinct for generality.
 
 .. figure:: figures/bss_eval_metrics_projections.png
     :scale: 50 %
     :alt: figure describing how bss_eval metrics are derived
+
+bss_eval decomposes the estimated signal into three *orthogonal* components corresponding to the
+target, interference, and noise, as shown in the illustration above.
+
+.. math::
+    \newcommand{\ve}{\boldsymbol{e}}
+    \newcommand{\mP}{\boldsymbol{P}}
+    \newcommand{\mA}{\boldsymbol{A}}
+    \newcommand{\starget}{\vs^{\text{target}}}
+    \newcommand{\einterf}{\ve^{\text{interf}}}
+    \newcommand{\eartif}{\ve^{\text{artif}}}
+
+    \starget_{km} = \mP_{k} \vshat_m, \quad
+    \einterf_{km} = \mP \vshat_m - \mP_k \vshat_m, \quad
+    \eartif_{km} = \vshat_m - \mP \vshat_m.
+
+Rather than projecting directly on the signals themselves, bss_eval allows for
+a short distortion filter of length :math:`L` to be applied.
+This corresponds to projection onto the subspace spanned by the :math:`L`
+shifts of the signals.
+Matrices :math:`\mP_k` and :math:`\mP` are orthogonal projection matrices onto
+the subspace spaned by the :math:`L` shifts of :math:`\vs_k` and of all
+references, respectively.  Let :math:`\mA_k \in \mathbb{R}^{(T + L - 1) \times
+L}` contain the :math:`L` shifts of :math:`\vs_k` in its columns and :math:`\mA
+= [\mA_1,\ldots,\mA_K]`, then
+
+.. math::
+
+    \mP_k = \mA_k(\mA_k^\top \mA_k)^{-1}\mA_k^\top,\quad
+    \mP = \mA(\mA^\top \mA)^{-1}\mA^\top.
+
+Then, SDR, SIR, and SAR, in decibels, are defined as follows,
+
+.. math::
+
+    \text{SDR}_{km} & = 10\log_{10} \frac{\| \starget_{km} \|^2}{\|\einterf_{km} + \eartif_{km} \|^2}, \\
+    \text{SIR}_{km} & = 10\log_{10} \frac{\| \starget_{km} \|^2}{\| \einterf_{km} \|^2}, \\
+    \text{SAR}_{km} & = 10\log_{10} \frac{\| \starget_{km} + \einterf_{km} \|^2}{\| \eartif_{m} \|^2}.
+
+Finally, assuming for simplicity that :math:`K=M`, the permutation of the estimated
+sources :math:`\pi\,:\,\{1,\ldots,K\} \to \{1,\ldots,K\}` that maximizes :math:`\sum_k \text{SIR}_{k\,\pi(k)}`
+is chosen.
+Once we have the matrix of SIR values, we can use the `linear_sum_assignement
+<https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.linear_sum_assignment.html>`_
+function from scipy to find this optimal permutation efficiently.
 
 The scale-invariant SDR is equivalent to using a distortion filter length of 1
 [3]_.  The use of longer filters has been shown to be beneficial when training
 neural networks to assist beamforming algorithms [2]_ [4]_.
 
 Iterative solver for the disortion filters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------------
 
 Use the ``use_cg_iter=10`` option when using any of the functions.
 
@@ -91,7 +151,7 @@ References
     blind audio source separation*, IEEE Trans. Audio Speech Lang. Process., vol.
     14, no. 4, pp. 1462–1469, Jun. 2006.
 
-.. [2] R. Scheibler, *SDR &mdash; Medium Rare with Fast Computations*, arXiv, 2021.
+.. [2] R. Scheibler, *SDR - Medium Rare with Fast Computations*, arXiv, 2021.
 
 .. [3] J. Le Roux, S. Wisdom, H. Erdogan, and J. R. Hershey, *SDR &mdash; Half-baked or Well Done?*,
     In Proc. IEEE ICASSP, Brighton, UK, May 2019.
