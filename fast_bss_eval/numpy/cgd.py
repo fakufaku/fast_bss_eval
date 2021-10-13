@@ -24,6 +24,7 @@ from typing import Optional, Tuple, Union
 import numpy as np
 from .helpers import clamp
 
+
 def optimal_symmetric_circulant_precond_column(
     col_toeplitz: np.ndarray,
 ) -> np.ndarray:
@@ -63,7 +64,7 @@ def optimal_nonsymmetric_circulant_precond_column(
 
     b = np.arange(1, n) / n
 
-    s1 = r[..., n-1:0:-1]
+    s1 = r[..., n - 1 : 0 : -1]
     s2 = r[..., :-n:-1]
 
     w = b * s1 + (1.0 - b) * s2
@@ -126,7 +127,7 @@ class SymmetricToeplitzOperator:
         pad_len = n_fft - 2 * n_col + 1
         pad_shape = col.shape[:-1] + (pad_len,)
         circ_col = np.concatenate(
-                (col, np.zeros_like(col, shape=pad_shape), col[..., :0:-1]), axis=-1
+            (col, np.zeros_like(col, shape=pad_shape), col[..., :0:-1]), axis=-1
         )
         self.Cforward = np.fft.rfft(circ_col, axis=-1)
 
@@ -280,7 +281,7 @@ class BlockToeplitzOperator:
                 col[..., :1, :, :],
                 col[..., :-n_col:-1, :, :],
                 np.zeros_like(col, shape=pad_shape),
-                col[..., n_col-1:0:-1, :, :],
+                col[..., n_col - 1 : 0 : -1, :, :],
             ),
             axis=-3,
         )
