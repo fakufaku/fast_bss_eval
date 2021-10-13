@@ -1,6 +1,8 @@
 fast\_bss\_eval
 ==============
 
+[![Documentation Status](https://readthedocs.org/projects/fast-bss-eval/badge/?version=latest)](https://fast-bss-eval.readthedocs.io/en/latest/?badge=latest)
+
 > Do you have a zillion BSS audio files to process and it is taking days ?
 > Is your simulation never ending ?
 >

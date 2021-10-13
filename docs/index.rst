@@ -10,6 +10,9 @@ Welcome to fast_bss_eval's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+.. image:: https://readthedocs.org/projects/fast-bss-eval/badge/?version=latest
+:target: https://fast-bss-eval.readthedocs.io/en/latest/?badge=latest
+:alt: Documentation Status
 
 | Do you have a zillion BSS audio files to process and it is taking days ?
 | Is your simulation never ending ?
