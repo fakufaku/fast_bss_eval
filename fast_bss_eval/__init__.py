@@ -31,7 +31,7 @@ To work with torch tensors, ``pytorch`` should also be installed obviously.
 
 ..  code-block:: shell
 
-    pip install fast_bss_eval
+    pip install fast-bss-eval
 
 Assuming you have multichannel signals for the estmated and reference sources
 stored in wav format files names ``my_estimate_file.wav`` and
@@ -237,10 +237,17 @@ try:
 except ImportError:
     has_torch = False
 
+    # dummy pytorch module
     class pt:
         class Tensor:
             def __init__(self):
                 pass
+
+    # dummy torch submodule
+    class torch:
+        bss_eval_sources = None
+        sdr = None
+        sdr_loss = None
 
 
 from . import numpy as numpy
