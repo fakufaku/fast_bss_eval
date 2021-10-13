@@ -11,8 +11,14 @@ Welcome to fast_bss_eval's documentation!
    :caption: Contents:
 
 .. image:: https://readthedocs.org/projects/fast-bss-eval/badge/?version=latest
-:target: https://fast-bss-eval.readthedocs.io/en/latest/?badge=latest
-:alt: Documentation Status
+   :target: https://fast-bss-eval.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+.. image:: https://github.com/fakufaku/fast_bss_eval/actions/workflows/lint.yml/badge.svg?branch=main
+   :target: https://github.com/fakufaku/fast_bss_eval/actions/workflows/lint.yml
+   :alt: Linting Status
+.. image:: https://github.com/fakufaku/fast_bss_eval/actions/workflows/pythonpackage.yml/badge.svg
+   :target: https://github.com/fakufaku/fast_bss_eval/actions/workflows/pythonpackage.yml
+   :alt: Tests Status
 
 | Do you have a zillion BSS audio files to process and it is taking days ?
 | Is your simulation never ending ?
