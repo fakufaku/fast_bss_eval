@@ -94,12 +94,12 @@ def _solve_permutation(
         p_opts[m] = p_opt
 
     if return_perm:
-        return loss_out, *args_out, torch.from_numpy(p_opts)
+        return (loss_out,) + tuple(args_out) + (torch.from_numpy(p_opts),)
     else:
         if len(args_out) == 0:
             return loss_out
         else:
-            return loss_out, *args_out
+            return (loss_out,) + tuple(args_out)
 
 
 def _linear_sum_assignment_with_inf(

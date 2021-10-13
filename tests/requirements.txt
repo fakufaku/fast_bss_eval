@@ -3,3 +3,4 @@ scipy
 torch>=1.9
 mir_eval
 pytest
+-e .
