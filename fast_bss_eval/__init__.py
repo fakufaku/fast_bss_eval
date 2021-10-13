@@ -48,17 +48,39 @@ metrics as follows.
     fs, ref = wavfile.read("my_reference_file.wav")
     _, est = wavfile.read("my_estimate_file.wav")
 
-    # compute the metrics
+    # compute all the metrics
     sdr, sir, sar, perm = fast_bss_eval.bss_eval_sources(ref.T, est.T)
 
-There are three functions implemented, :func:`fast_bss_eval.bss_eval_sources`,
-:func:`fast_bss_eval.sdr`, and :func:`fast_bss_eval.sdr_loss`.
+    # compute the SDR only
+    sdr = fast_bss_eval.sdr(ref.T, est.T)
+
+There are three functions implemented, :func:`bss_eval_sources`,
+:func:`sdr`, and :func:`sdr_loss`.
+
+.. note::
+
+    If you use this package in your own research, please cite `our paper <https://arxiv.org>`_ describing it [4]_.
+
+    R. Scheibler, *SDR - Medium Rare with Fast Computations*, arXiv, 2021.
+
 
 Benchmark
 ---------
 
 Average execution time on a dataset of multichannel signals with 2, 3, and 4
-channels.
+channels.  We compare ``fast_bss_eval`` to `mir_eval
+<https://github.com/craffel/mir_eval>`_ and `sigsep
+<https://github.com/sigsep/bsseval>`_.  We further benchmark ``fast_bss_eval``
+using ``numpy``/``pytorch`` with double and single precision floating-point
+arithmetic (fp64/fp32), and using ``solve`` function or an :ref:`iterative solver<Iterative solver for the disortion filters>` (CGD10).
+
+The benchmark was run on a Linux workstation with an Intel Xeon Gold 6230 CPU @
+2.10 GHz with 8 cores, an NVIDIA Tesla V100 GPU, and 64 GB of RAM.
+We test single-threaded (1CPU) and 8 core performance (8CPU) on the CPU, and on the GPU.
+We observe that for ``numpy`` there is not so much gain of using multiple cores.
+It may be more efficient to run multiple samples in parallel single-threaded
+processes to fully exploit multi-core architectures.
+
 
 .. figure:: figures/channels_vs_runtime.png
     :alt: runtime benchmark result
@@ -142,7 +164,47 @@ neural networks to assist beamforming algorithms [2]_ [4]_.
 Iterative solver for the disortion filters
 ------------------------------------------
 
-Use the ``use_cg_iter=10`` option when using any of the functions.
+.. note::
+
+    **tl;dr** If you need more speed, add the keyword argument ``use_cg_iter=10`` to any method call.
+
+As described above, computing the bss_eval metrics requires to solve the systems
+
+.. math::
+
+    (\mA_k^\top \mA_k) \vh_{km} & = \mA_k^\top \vshat_m, \\
+    (\mA^\top \mA) \vg_{m} & = \mA^\top \vshat_m, \\
+
+for all :math:`k` and :math:`m`.  These system matrices are large and solving
+directly, e.g., using ``numpy.linalg.solve``, can be expensive.  However, these
+matrices are also structures (`Toeplitz
+<https://en.wikipedia.org/wiki/Toeplitz_matrix>`_ and block-Toeplitz).  In this
+case, we can apply a much more efficient iterative algorithm based on
+`preconditioned conjugate gradient descent
+<https://en.wikipedia.org/wiki/Conjugate_gradient_method>`_ [5]_.
+
+The default behavior of ``fast_bss_eval`` is to use the direct solver (via the
+``solve`` function of ``numpy`` or ``pytorch``) to ensure consistency with
+the output of other packages.
+However, if speed becomes an issue, it is possible to switch to the iterative
+solver by adding the option ``use_cg_iter`` (USE Conjugate Gradient ITERations) to
+any of the methods in ``fast_bss_eval``.
+We found that using 10 iterations is a good trade-off between speed and accuracy,
+i.e., ``use_cg_iter=10``.
+
+Author
+------
+
+This package was written by `Robin Scheibler <http://www.robinscheibler.com>`_.
+
+License
+-------
+
+2021 (c) Robin Scheibler
+
+The source code for this package is released under `MIT License
+<https://opensource.org/licenses/MIT>`_ and available on `github
+<https://github.com/fakufaku/fast_bss_eval>`_.
 
 References
 ----------
@@ -159,6 +221,9 @@ References
 .. [4] C. Boeddeker et al., *Convolutive transfer function invariant SDR training criteria
     for multi-channel reverberant speech separation*, in Proc. IEEE ICASSP, Toronto,
     CA, Jun. 2021, pp. 8428–8432.
+
+.. [5] R. H. Chan and M. K. Ng, *Conjugate gradient methods for Toeplitz
+    systems*, SIAM Review, vol. 38, no. 3, pp. 427–482, Sep. 1996.
 """
 from typing import Optional, Union, Tuple
 
@@ -275,7 +340,8 @@ def sdr(
     Compute the signal-to-distortion ratio (SDR) only.
 
     This function computes the SDR for all pairs of est/ref signals and finds the
-    permutation maximizing the sum of all SDRs.
+    permutation maximizing the sum of all SDRs. This is unlike :py:func:`fast_bss_eval.bss_eval_sources`
+    that uses the SIR.
 
     The order of ref/est follows the convention of bss_eval (i.e., ref first).
 
@@ -308,13 +374,13 @@ def sdr(
         If set to True, the optimal permutation of the estimated signals is
         also returned (default: ``False``)
     change_sign:
-        If set to True, the sign is flipped and the negative CI-SDR is returned
+        If set to True, the sign is flipped and the negative SDR is returned
         (default: ``False``)
 
     Returns
     -------
     cisdr:
-        The CI-SDR of the input signal ``shape == (..., n_channels_est)``
+        The SDR of the input signal ``shape == (..., n_channels_est)``
     perm:
         The index of the corresponding reference signal ``shape == (..., n_channels_est)``.
         Only returned if ``return_perm == True``
@@ -345,10 +411,12 @@ def sdr_loss(
     pairwise: Optional[bool] = False,
 ) -> Union[np.ndarray, pt.Tensor]:
     """
-    Compute the negative signal-to-distortion ratio (CI-SDR).
+    Computes the negative signal-to-distortion ratio (SDR).
 
-    The order of est/ref follows the convention of pytorch loss functions
-    (i.e., est first).
+    This function is almost the same as :py:func:`fast_bss_eval.sdr` except for
+
+    * negative sign to make it a *loss* function
+    * ``est``/``ref`` arguments follows the convention of pytorch loss functions (i.e., ``est`` first).
 
     Parameters
     ----------
@@ -382,7 +450,7 @@ def sdr_loss(
     Returns
     -------
     :
-        The negative CI-SDR of the input signal. The returned tensor has
+        The negative SDR of the input signal. The returned tensor has
 
         * ``shape == (..., n_channels_est)`` if ``pairwise == False``
         * ``shape == (..., n_channels_ref, n_channels_est)`` if ``pairwise == True``.

@@ -58,10 +58,8 @@ setup(
     #         'sample=sample:main',
     #     ],
     # },
-    # project_urls={  # Optional
-    #     'Bug Reports': 'https://github.com/pypa/sampleproject/issues',
-    #     'Funding': 'https://donate.pypi.org',
-    #     'Say Thanks!': 'http://saythanks.io/to/example',
-    #     'Source': 'https://github.com/pypa/sampleproject/',
-    # },
+    project_urls={  # Optional
+        "Bug Reports": "https://github.com/fakufaku/fast_bss_eval/issues",
+        "Source": "https://github.com/fakufaku/fast_bss_eval/",
+    },
 )
