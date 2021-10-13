@@ -1,4 +1,4 @@
-name: fast_bss_eval
+name: tests
 
 on: [push]
 
