@@ -1,3 +1,4 @@
 sphinx
 karma-sphinx-theme
 sphinx-autodoc-typehints
+git+https://github.com/fakufaku/fast_bss_eval
