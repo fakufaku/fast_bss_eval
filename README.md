@@ -28,7 +28,7 @@ Quick Start
 
 ```bash
 # from pypi
-pip install fast_bss_eval
+pip install fast-bss-eval
 
 # or from source
 git clone https://github.com/fakufaku/fast_bss_eval
