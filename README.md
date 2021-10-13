@@ -61,7 +61,7 @@ Benchmark
 ---------
 
 This package is significantly faster than other packages that also allow
-to compute bss\_eval metrics such as [mir\_eval](https://github.com/craffel/mir_eval) or [sigsep/bsseva](https://github.com/sigsep/bsseval).
+to compute bss\_eval metrics such as [mir\_eval](https://github.com/craffel/mir_eval) or [sigsep/bsseval](https://github.com/sigsep/bsseval).
 We did a benchmark using numpy/torch, single/double precision floating point
 arithmetic (fp32/fp64), and using either Gaussian elimination or a [conjugate
 gradient descent](https://en.wikipedia.org/wiki/Conjugate_gradient_method)

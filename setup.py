@@ -17,7 +17,7 @@ setup(
     long_description_content_type="text/markdown",  # text/plain, text/x-rst, text/markdown
     url="https://github.com/fakufaku/fast_bss_eval",
     author="Robin Scheibler",
-    # author_email='author@example.com',
+    author_email="fakufaku@gmail.com",
     classifiers=[  # Optional
         # How mature is this project? Common values are
         #   3 - Alpha
