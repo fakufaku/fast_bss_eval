@@ -15,7 +15,7 @@ jobs:
         exclude:
           # excludes macos/python3.6 since this combination is not available
           - os: macos-latest
-          - python-version: 3.6
+            python-version: 3.6
     steps:
     - uses: actions/checkout@v2
     - name: Checkout submodules
