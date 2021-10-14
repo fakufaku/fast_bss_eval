@@ -61,7 +61,7 @@ There are three functions implemented, :func:`bss_eval_sources`,
 
     If you use this package in your own research, please cite `our paper <https://arxiv.org/abs/2110.06440>`_ describing it [4]_.
 
-    .. code-block:: latex
+    .. code-block:: bibtex
 
         @misc{scheibler_sdr_2021,
           title={SDR - Medium Rare with Fast Computations},
