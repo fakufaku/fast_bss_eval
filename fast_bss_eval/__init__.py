@@ -64,7 +64,7 @@ There are three functions implemented, :func:`bss_eval_sources`,
     .. code-block:: bibtex
 
         @misc{scheibler_sdr_2021,
-          title={SDR - Medium Rare with Fast Computations},
+          title={SDR --- Medium Rare with Fast Computations},
           author={Robin Scheibler},
           year={2021},
           eprint={2110.06440},

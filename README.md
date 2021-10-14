@@ -61,20 +61,6 @@ _, est = wavfile.read("my_estimate_file.wav")
 sdr, sir, sar, perm = fast_bss_eval.bss_eval_sources(ref.T, est.T)
 ```
 
-If you use this package in your own research, please cite [our paper](https://arxiv.org/abs/2110.06440) describing it.
-
-```bibtex
-@misc{scheibler_sdr_2021,
-  title={SDR - Medium Rare with Fast Computations},
-  author={Robin Scheibler},
-  year={2021},
-  eprint={2110.06440},
-  archivePrefix={arXiv},
-  primaryClass={eess.AS}
-}
-```
-
-
 Benchmark
 ---------
 
@@ -86,6 +72,24 @@ gradient descent](https://en.wikipedia.org/wiki/Conjugate_gradient_method)
 (solve/CGD10).
 
 <img src="./docs/figures/channels_vs_runtime.png">
+
+
+Citation
+--------
+
+If you use this package in your own research, please cite [our paper](https://arxiv.org/abs/2110.06440) describing it.
+
+```bibtex
+@misc{scheibler_sdr_2021,
+  title={SDR --- Medium Rare with Fast Computations},
+  author={Robin Scheibler},
+  year={2021},
+  eprint={2110.06440},
+  archivePrefix={arXiv},
+  primaryClass={eess.AS}
+}
+```
+
 
 License
 -------
