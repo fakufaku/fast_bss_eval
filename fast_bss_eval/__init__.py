@@ -209,7 +209,7 @@ This package was written by `Robin Scheibler <http://www.robinscheibler.com>`_.
 License
 -------
 
-2021 (c) Robin Scheibler
+2021 (c) Robin Scheibler, LINE Corporation
 
 The source code for this package is released under `MIT License
 <https://opensource.org/licenses/MIT>`_ and available on `github
