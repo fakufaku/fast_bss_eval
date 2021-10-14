@@ -61,6 +61,20 @@ _, est = wavfile.read("my_estimate_file.wav")
 sdr, sir, sar, perm = fast_bss_eval.bss_eval_sources(ref.T, est.T)
 ```
 
+If you use this package in your own research, please cite `our paper <https://arxiv.org/abs/2110.06440>`_ describing it [4]_.
+
+```bibtex
+@misc{scheibler_sdr_2021,
+  title={SDR - Medium Rare with Fast Computations},
+  author={Robin Scheibler},
+  year={2021},
+  eprint={2110.06440},
+  archivePrefix={arXiv},
+  primaryClass={eess.AS}
+}
+```
+
+
 Benchmark
 ---------
 
