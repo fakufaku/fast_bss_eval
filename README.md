@@ -14,7 +14,7 @@ fast\_bss\_eval
 evaluation of blind source separation.  Our implementation of the bss\_eval
 metrics has the following advantages compared to other existing ones.
 
-* seemlessly works with **both** [numpy](https://numpy.org/) arrays and [pytorch](https://pytorch.org) tensors
+* seamlessly works with **both** [numpy](https://numpy.org/) arrays and [pytorch](https://pytorch.org) tensors
 * very fast
 * can be even faster by using an iterative solver (add `use_cg_iter=10` option to the function call)
 * differentiable via pytorch
