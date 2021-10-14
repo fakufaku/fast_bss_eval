@@ -59,9 +59,18 @@ There are three functions implemented, :func:`bss_eval_sources`,
 
 .. note::
 
-    If you use this package in your own research, please cite `our paper <https://arxiv.org>`_ describing it [4]_.
+    If you use this package in your own research, please cite `our paper <https://arxiv.org/abs/2110.06440>`_ describing it [4]_.
 
-    R. Scheibler, *SDR - Medium Rare with Fast Computations*, arXiv, 2021.
+    .. code-block:: latex
+
+        @misc{scheibler_sdr_2021,
+          title={SDR - Medium Rare with Fast Computations},
+          author={Robin Scheibler},
+          year={2021},
+          eprint={2110.06440},
+          archivePrefix={arXiv},
+          primaryClass={eess.AS}
+        }
 
 
 Benchmark
@@ -213,9 +222,9 @@ References
     blind audio source separation*, IEEE Trans. Audio Speech Lang. Process., vol.
     14, no. 4, pp. 1462–1469, Jun. 2006.
 
-.. [2] R. Scheibler, *SDR - Medium Rare with Fast Computations*, arXiv, 2021.
+.. [2] R. Scheibler, *SDR - Medium Rare with Fast Computations*, arXiv:2110.06440, 2021. `pdf <https://arxiv.org/abs/2110.06440>`_
 
-.. [3] J. Le Roux, S. Wisdom, H. Erdogan, and J. R. Hershey, *SDR &mdash; Half-baked or Well Done?*,
+.. [3] J. Le Roux, S. Wisdom, H. Erdogan, and J. R. Hershey, *SDR - Half-baked or Well Done?*,
     In Proc. IEEE ICASSP, Brighton, UK, May 2019.
 
 .. [4] C. Boeddeker et al., *Convolutive transfer function invariant SDR training criteria
@@ -274,7 +283,7 @@ def bss_eval_sources(
     This function computes the SDR, SIR, and SAR for the input reference and estimated
     signals.
 
-    The order of ref/est follows the convention of bss_eval (i.e., ref first).
+    The order of ``ref``/``est`` follows the convention of bss_eval (i.e., ref first).
 
     Parameters
     ----------
@@ -350,7 +359,7 @@ def sdr(
     permutation maximizing the sum of all SDRs. This is unlike :py:func:`fast_bss_eval.bss_eval_sources`
     that uses the SIR.
 
-    The order of ref/est follows the convention of bss_eval (i.e., ref first).
+    The order of ``ref``/``est`` follows the convention of bss_eval (i.e., ref first).
 
     Parameters
     ----------
@@ -423,7 +432,7 @@ def sdr_loss(
     This function is almost the same as :py:func:`fast_bss_eval.sdr` except for
 
     * negative sign to make it a *loss* function
-    * ``est``/``ref`` arguments follows the convention of pytorch loss functions (i.e., ``est`` first).
+    * ``est``/``ref`` arguments follow the convention of pytorch loss functions (i.e., ``est`` first).
 
     Parameters
     ----------
