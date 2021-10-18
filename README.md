@@ -97,4 +97,4 @@ License
 
 2021 (c) Robin Scheibler, LINE Corporation
 
-This code is released under [MIT License](https://opensource.org/licenses/MIT).
+All of this code is released under [MIT License](https://opensource.org/licenses/MIT) with the exception of `fast_bss_eval/torch/hungarian.py` which is under [3-clause BSD License](https://opensource.org/licenses/BSD-3-Clause).
