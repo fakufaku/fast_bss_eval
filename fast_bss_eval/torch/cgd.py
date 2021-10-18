@@ -206,54 +206,6 @@ class BlockCirculantPreconditionerOperator:
         return y
 
 
-class BlockCirculantOperator:
-    """
-    Optimal circulant pre-conditioner operator for a symmetric topelitz matrix
-    """
-
-    def __init__(self, toeplitz_col: torch.Tensor):
-        """
-        toeplitz_col: torch.Tensor, (..., 2 * filter_length, n_channels, n_channels)
-        """
-
-        col_precond = optimal_nonsymmetric_circulant_precond_column(
-            toeplitz_col, dim=-3
-        )
-        C = torch.fft.rfft(col_precond, dim=-3)
-
-        # complex pointwise inverse
-        self.C = C
-        self.n = col_precond.shape[-3]
-
-        self._shape = col_precond.shape[:-1] + (
-            self.n * self.C.shape[-2],
-            self.n * self.C.shape[-1],
-        )
-
-    @property
-    def shape(self):
-        return self._shape
-
-    @property
-    def ndim(self):
-        return len(self._shape)
-
-    def __matmul__(self, lhs: torch.Tensor) -> torch.Tensor:
-
-        assert lhs.shape[-2] == self.shape[-1], (
-            "Dimension mismatch between operators with "
-            f"shapes {self.shape} and {lhs.shape}"
-        )
-
-        lhs = lhs.reshape(lhs.shape[:-2] + (-1, self.C.shape[-1]) + lhs.shape[-1:])
-        lhs = torch.fft.rfft(lhs, n=self.n, dim=-3)
-        prod = torch.einsum("...rc,...cm->...rm", self.C, lhs)
-        y = torch.fft.irfft(prod, n=self.n, dim=-3)
-        y = y.reshape(lhs.shape[:-3] + (-1,) + lhs.shape[-1:])
-
-        return y
-
-
 class BlockToeplitzOperator:
     """
     Operator implementing fast matrix multiplication by a block Toeplitz matrix.
@@ -442,7 +394,6 @@ def block_toeplitz_conjugate_gradient(
 
     # prepare pre-conditioner
     precond = BlockCirculantPreconditionerOperator(acf)
-    # precond = None
 
     # prepare forward operator
     forward = BlockToeplitzOperator(acf)

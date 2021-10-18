@@ -357,6 +357,7 @@ def sdr(
         clamp_db=clamp_db,
         load_diag=load_diag,
     )
+    print(neg_sdr)
 
     neg_sdr, perm = _solve_permutation(neg_sdr, return_perm=True)
 
