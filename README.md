@@ -4,6 +4,7 @@ fast\_bss\_eval
 [![Documentation Status](https://readthedocs.org/projects/fast-bss-eval/badge/?version=latest)](https://fast-bss-eval.readthedocs.io/en/latest/?badge=latest)
 [![black](https://github.com/fakufaku/fast_bss_eval/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/fakufaku/fast_bss_eval/actions/workflows/lint.yml)
 [![tests](https://github.com/fakufaku/fast_bss_eval/actions/workflows/pythonpackage.yml/badge.svg)](https://github.com/fakufaku/fast_bss_eval/actions/workflows/pythonpackage.yml)
+[![codecov](https://codecov.io/gh/fakufaku/fast_bss_eval/branch/main/graph/badge.svg?token=N0OF1R2OWG)](https://codecov.io/gh/fakufaku/fast_bss_eval)
 
 > Do you have a zillion BSS audio files to process and it is taking days ?
 > Is your simulation never ending ?
