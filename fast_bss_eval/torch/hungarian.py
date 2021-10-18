@@ -11,7 +11,9 @@ from typing import Tuple
 import torch
 
 
-def linear_sum_assignment(cost_matrix: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+def linear_sum_assignment(
+    cost_matrix: torch.Tensor,
+) -> Tuple[torch.Tensor, torch.Tensor]:
     r"""Solve the linear sum assignment problem.
 
     The linear sum assignment problem is also known as minimum weight matching
@@ -179,7 +181,7 @@ def _step4(state):
     left. Save the smallest uncovered value and Go to Step 6.
     """
     # We convert to int as numpy operations are faster on int
-    C = (state.C == 0)
+    C = state.C == 0
     covered_C = C * state.row_uncovered[:, None]
     covered_C *= state.col_uncovered
     n, m = state.C.shape[-2:]
@@ -202,7 +204,7 @@ def _step4(state):
                 state.Z0_c = col
                 return _step5
             else:
-                col = nz2[0,0]
+                col = nz2[0, 0]
                 state.row_uncovered[row] = False
                 state.col_uncovered[col] = True
                 covered_C[:, col] = C[:, col] * (state.row_uncovered.to(int))
