@@ -22,7 +22,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 import torch
-from scipy.optimize import linear_sum_assignment
+from .hungarian import linear_sum_assignment
 
 
 def _remove_mean(x: torch.Tensor, dim=-1) -> torch.Tensor:
@@ -78,23 +78,21 @@ def _solve_permutation(
         for i, arg in enumerate(args):
             args[i] = arg.transpose(-2, -1)
 
-    loss_mat_npy = loss_mat.cpu().detach().numpy()
-
     loss_out = loss_mat.new_zeros(b_shape + (n_chan_out,))
     args_out = [arg.new_zeros(b_shape + (n_chan_out,)) for arg in args]
 
-    p_opts = np.zeros(b_shape + (n_chan_out,), dtype=np.int64)
+    p_opts = target_loss_matrix.new_zeros(b_shape + (n_chan_out,), dtype=torch.int64)
     for m in np.ndindex(b_shape):
         # linear sum assignment tries to *maximize* the sum, so we add a minus sign
         # because we are supposed to *minimize* losses
-        dum, p_opt = _linear_sum_assignment_with_inf(loss_mat_npy[m])
+        dum, p_opt = _linear_sum_assignment_with_inf(loss_mat[m])
         loss_out[m] = loss_mat[m + (dum, p_opt)]
         for i, arg in enumerate(args):
             args_out[i][m] = arg[m + (dum, p_opt)]
         p_opts[m] = p_opt
 
     if return_perm:
-        return (loss_out,) + tuple(args_out) + (torch.from_numpy(p_opts),)
+        return (loss_out,) + tuple(args_out) + (p_opts,)
     else:
         if len(args_out) == 0:
             return loss_out
@@ -114,26 +112,26 @@ def _linear_sum_assignment_with_inf(
     https://github.com/scipy/scipy/issues/6900
     to handle infinite entries in the cost matrix.
     """
-    cost_matrix = np.asarray(cost_matrix)
-    min_inf = np.isneginf(cost_matrix).any()
-    max_inf = np.isposinf(cost_matrix).any()
+
+    min_inf = torch.isneginf(cost_matrix).any()
+    max_inf = torch.isposinf(cost_matrix).any()
     if min_inf and max_inf:
         raise ValueError("matrix contains both inf and -inf")
 
     if min_inf or max_inf:
-        cost_matrix = cost_matrix.copy()
-        values = cost_matrix[~np.isinf(cost_matrix)]
+        cost_matrix = cost_matrix.clone()
+        values = cost_matrix[~torch.isinf(cost_matrix)]
         m = values.min()
         M = values.max()
         n = min(cost_matrix.shape)
         # strictly positive constant even when added
         # to elements of the cost matrix
-        positive = n * (M - m + np.abs(M) + np.abs(m) + 1)
+        positive = n * (M - m + torch.abs(M) + torch.abs(m) + 1)
         if max_inf:
             place_holder = (M + (n - 1) * (M - m)) + positive
         if min_inf:
             place_holder = (m + (n - 1) * (m - M)) - positive
 
-        cost_matrix[np.isinf(cost_matrix)] = place_holder
+        cost_matrix[torch.isinf(cost_matrix)] = place_holder
 
     return linear_sum_assignment(cost_matrix)
