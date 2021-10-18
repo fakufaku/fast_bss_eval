@@ -1,6 +1,7 @@
 fast\_bss\_eval
 ==============
 
+[![PyPI version](https://badge.fury.io/py/fast-bss-eval.svg)](https://badge.fury.io/py/fast-bss-eval)
 [![Documentation Status](https://readthedocs.org/projects/fast-bss-eval/badge/?version=latest)](https://fast-bss-eval.readthedocs.io/en/latest/?badge=latest)
 [![black](https://github.com/fakufaku/fast_bss_eval/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/fakufaku/fast_bss_eval/actions/workflows/lint.yml)
 [![tests](https://github.com/fakufaku/fast_bss_eval/actions/workflows/pythonpackage.yml/badge.svg)](https://github.com/fakufaku/fast_bss_eval/actions/workflows/pythonpackage.yml)
