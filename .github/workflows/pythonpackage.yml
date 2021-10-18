@@ -38,7 +38,6 @@ jobs:
         pytest --cov=./fast_bss_eval --cov-report=xml
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v1
-      with:
     - name: Publish sdist to pypi
       if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v') && matrix.os == 'ubuntu-latest'
       env:
