@@ -178,7 +178,12 @@ def test_dtype(is_torch, is_fp32, expected_dtype):
 
 @pytest.mark.parametrize(
     "is_torch,is_fp32,clamp_db",
-    [(False, False, 30), (True, False, 30), (False, True, 30), (True, True, 30),],
+    [
+        (False, False, 30),
+        (True, False, 30),
+        (False, True, 30),
+        (True, True, 30),
+    ],
 )
 def test_clamp_db(is_torch, is_fp32, clamp_db):
     """
@@ -231,7 +236,15 @@ def test_sdr_loss(is_torch, is_fp32, clamp_db, use_cg_iter, zero_mean, load_diag
     c = 2  # channels
     n = 16000  # samples
 
-    ref, est = _random_input_pairs(b, c, n, is_torch=is_torch, matrix_factor=0.1, noise_factor=0.01, is_fp32=is_fp32,)
+    ref, est = _random_input_pairs(
+        b,
+        c,
+        n,
+        is_torch=is_torch,
+        matrix_factor=0.1,
+        noise_factor=0.01,
+        is_fp32=is_fp32,
+    )
 
     sdr1 = fast_bss_eval.sdr(
         ref,
