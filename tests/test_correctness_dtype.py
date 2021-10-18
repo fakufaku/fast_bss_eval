@@ -219,6 +219,8 @@ def test_clamp_db(is_torch, is_fp32, clamp_db):
         (True, True, None, None, False, None),
         (False, False, None, 10, False, None),
         (True, True, None, 10, False, None),
+        (False, False, None, None, True, None),
+        (True, True, None, None, True, None),
     ],
 )
 def test_sdr_loss(is_torch, is_fp32, clamp_db, use_cg_iter, zero_mean, load_diag):
