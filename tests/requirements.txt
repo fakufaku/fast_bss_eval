@@ -3,4 +3,5 @@ scipy
 torch>=1.9
 mir_eval
 pytest
+pytest-cov
 -e .

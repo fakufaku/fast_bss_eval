@@ -65,6 +65,7 @@ def compare_to_mir_eval(
     is_torch,
     tol,
     n_repeat,
+    compute_permutation=True,
     verbose=False,
     **bss_eval_kwargs
 ):
@@ -75,50 +76,56 @@ def compare_to_mir_eval(
 
         # reference is mir_eval
         me_sdr, me_sir, me_sar, _ = mir_eval.separation.bss_eval_sources(
-            _ref[0], _est[0]
+            _ref[0], _est[0], compute_permutation
         )
 
         ref, est = _as(is_fp32, is_torch, _ref, _est)
 
-        sdr, sir, sar, perm = fast_bss_eval.bss_eval_sources(
-            ref, est, **bss_eval_kwargs
+        sdr, sir, sar, *_ = fast_bss_eval.bss_eval_sources(
+            ref, est, compute_permutation=compute_permutation, **bss_eval_kwargs
         )
-
-        sdr_only = fast_bss_eval.sdr(ref, est, **bss_eval_kwargs)
 
         sdr = to_numpy(sdr)
         sir = to_numpy(sir)
         sar = to_numpy(sar)
-        sdr_only = to_numpy(sdr_only)
 
         error_sdr = np.max(np.abs(sdr - me_sdr))
         error_sir = np.max(np.abs(sir - me_sir))
         error_sar = np.max(np.abs(sar - me_sar))
-        error_sdr_only = np.max(np.abs(sdr_only - me_sdr))
 
         if verbose:
-            print(error_sdr, error_sir, error_sar, error_sdr_only)
+            endofline = " " if compute_permutation else "\n"
+            print(error_sdr, error_sir, error_sar, end=endofline)
 
         assert error_sdr < tol
         assert error_sir < tol
         assert error_sar < tol
-        assert error_sdr_only < tol
+
+        if compute_permutation == True:
+            sdr_only = fast_bss_eval.sdr(ref, est, **bss_eval_kwargs)
+            sdr_only = to_numpy(sdr_only)
+            error_sdr_only = np.max(np.abs(sdr_only - me_sdr))
+            assert error_sdr_only < tol
+            if verbose:
+                print(error_sdr_only)
 
 
 @pytest.mark.parametrize(
-    "is_fp32,is_torch,use_cg_iter,tol",
+    "is_fp32,is_torch,use_cg_iter,tol,compute_permutation",
     [
-        (False, False, None, 1e-5),
-        (True, False, None, 1e-2),
-        (False, True, None, 1e-5),
-        (True, True, None, 1e-2),
-        (False, False, 20, 1e-1),
-        (True, False, 20, 1e-1),
-        (False, True, 20, 1e-1),
-        (True, True, 20, 1e-1),
+        (False, False, None, 1e-5, True),
+        (True, False, None, 1e-2, True),
+        (False, True, None, 1e-5, True),
+        (True, True, None, 1e-2, True),
+        (False, False, 20, 1e-1, True),
+        (True, False, 20, 1e-1, True),
+        (False, True, 20, 1e-1, True),
+        (True, True, 20, 1e-1, True),
+        (False, False, None, 1e-5, False),
+        (False, True, None, 1e-5, False),
     ],
 )
-def test_accuracy(is_fp32, is_torch, use_cg_iter, tol):
+def test_accuracy(is_fp32, is_torch, use_cg_iter, tol, compute_permutation):
     """
     Tests that the output produced for random signals is
     reasonnably close to that produced by mir_eval
@@ -132,7 +139,15 @@ def test_accuracy(is_fp32, is_torch, use_cg_iter, tol):
     verbose = True
 
     compare_to_mir_eval(
-        c, n, is_fp32, is_torch, tol, n_repeat, verbose=verbose, use_cg_iter=use_cg_iter
+        c,
+        n,
+        is_fp32,
+        is_torch,
+        tol,
+        n_repeat,
+        verbose=verbose,
+        compute_permutation=compute_permutation,
+        use_cg_iter=use_cg_iter,
     )
 
 
@@ -159,3 +174,83 @@ def test_dtype(is_torch, is_fp32, expected_dtype):
     assert sdr.dtype == expected_dtype
     assert sir.dtype == expected_dtype
     assert sar.dtype == expected_dtype
+
+
+@pytest.mark.parametrize(
+    "is_torch,is_fp32,clamp_db",
+    [(False, False, 30), (True, False, 30), (False, True, 30), (True, True, 30),],
+)
+def test_clamp_db(is_torch, is_fp32, clamp_db):
+    """
+    Tests that the type of the output is the same as that of the input
+    """
+    b = 1  # batch
+    c = 2  # channels
+    n = 16000  # samples
+
+    ref, est = _random_input_pairs(
+        b,
+        c,
+        n,
+        is_torch=is_torch,
+        is_fp32=is_fp32,
+        matrix_factor=0.01,
+        noise_factor=0.0,
+    )
+    sdr, sir, sar, _ = fast_bss_eval.bss_eval_sources(ref, est, clamp_db=clamp_db)
+
+    the_max = max([sdr.max(), sir.max(), sar.max()])
+    the_min = max([sdr.min(), sir.min(), sar.min()])
+
+    assert the_max <= clamp_db + 1
+    assert the_min >= -clamp_db - 1
+
+
+@pytest.mark.parametrize(
+    "is_torch,is_fp32,clamp_db,use_cg_iter,zero_mean,load_diag",
+    [
+        (False, False, 30, None, False, None),
+        (False, True, 30, None, False, None),
+        (True, True, 30, None, False, None),
+        (True, False, 30, None, False, None),
+        (False, False, 30, None, False, 1e-5),
+        (True, True, 30, None, False, 1e-5),
+        (False, False, None, None, False, None),
+        (True, True, None, None, False, None),
+        (False, False, None, 10, False, None),
+        (True, True, None, 10, False, None),
+    ],
+)
+def test_sdr_loss(is_torch, is_fp32, clamp_db, use_cg_iter, zero_mean, load_diag):
+    """
+    Tests that the type of the output is the same as that of the input
+    """
+    b = 1  # batch
+    c = 2  # channels
+    n = 16000  # samples
+
+    ref, est = _random_input_pairs(b, c, n, is_torch=is_torch, matrix_factor=0.1, noise_factor=0.01, is_fp32=is_fp32,)
+
+    sdr1 = fast_bss_eval.sdr(
+        ref,
+        est,
+        clamp_db=clamp_db,
+        use_cg_iter=use_cg_iter,
+        zero_mean=zero_mean,
+        load_diag=load_diag,
+    )
+    sdr2 = fast_bss_eval.sdr_loss(
+        est,
+        ref,
+        clamp_db=clamp_db,
+        use_cg_iter=use_cg_iter,
+        zero_mean=zero_mean,
+        load_diag=load_diag,
+    )
+
+    if is_fp32 or use_cg_iter is not None:
+        tol = 1e-2
+    else:
+        tol = 1e-5
+
+    assert abs(sdr1 + sdr2).max() < tol
