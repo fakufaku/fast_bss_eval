@@ -234,7 +234,12 @@ def sdr_loss(
 
     if filter_length == 1:
         coh = square_cosine_metrics_length_one_filter(
-            ref, est, zero_mean=zero_mean, load_diag=None, with_coh_sar=False
+            ref,
+            est,
+            zero_mean=zero_mean,
+            load_diag=None,
+            pairwise=pairwise,
+            with_coh_sar=False,
         )
 
     else:
@@ -293,6 +298,7 @@ def sdr_pit_loss(
         zero_mean=zero_mean,
         clamp_db=clamp_db,
         load_diag=load_diag,
+        change_sign=True,
         return_perm=False,
     )
 

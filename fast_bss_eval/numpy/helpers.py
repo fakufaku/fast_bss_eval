@@ -35,7 +35,7 @@ def clamp(x, min=None, max=None):
     return x
 
 
-def _remove_mean(x: np.ndarray, axis=-1) -> np.ndarray:
+def _remove_mean(x: np.ndarray, axis: Optional[int] = -1) -> np.ndarray:
     return x - x.mean(axis=axis, keepdims=True)
 
 
@@ -68,9 +68,7 @@ def _coherence_to_neg_sdr(
 
 
 def _solve_permutation(
-    target_loss_matrix: np.ndarray,
-    *args,
-    return_perm=False,
+    target_loss_matrix: np.ndarray, *args, return_perm=False,
 ) -> Tuple[np.ndarray]:
     """
     Solve the permutation in numpy for now

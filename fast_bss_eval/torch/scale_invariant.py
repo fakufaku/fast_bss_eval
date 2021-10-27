@@ -34,7 +34,7 @@ def si_sdr_pit_loss(
         zero_mean=zero_mean,
         clamp_db=clamp_db,
         return_perm=False,
-        change_sign=False,
+        change_sign=True,
     )
 
 

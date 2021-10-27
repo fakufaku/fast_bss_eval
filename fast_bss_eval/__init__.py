@@ -256,7 +256,7 @@ Bibliography
     blind audio source separation*, IEEE Trans. Audio Speech Lang. Process., vol.
     14, no. 4, pp. 1462–1469, Jun. 2006.
 
-.. [2] R. Scheibler, *SDR - Medium Rare with Fast Computations*, arXiv:2110.06440, 2021. `pdf <https://arxiv.org/abs/2110.06440>`_
+.. [2] R\. Scheibler, *SDR - Medium Rare with Fast Computations*, arXiv:2110.06440, 2021. `pdf <https://arxiv.org/abs/2110.06440>`_
 
 .. [3] J. Le Roux, S. Wisdom, H. Erdogan, and J. R. Hershey, *SDR - Half-baked or Well Done?*,
     In Proc. IEEE ICASSP, Brighton, UK, May 2019.
@@ -583,7 +583,6 @@ def sdr_pit_loss(
         use_cg_iter=use_cg_iter,
         zero_mean=zero_mean,
         clamp_db=clamp_db,
-        pairwise=pairwise,
         load_diag=load_diag,
     )
 
@@ -651,7 +650,6 @@ def si_sdr(
     est: Union[np.ndarray, pt.Tensor],
     zero_mean: Optional[bool] = False,
     clamp_db: Optional[float] = None,
-    load_diag: Optional[float] = None,
     return_perm: Optional[bool] = False,
     change_sign: Optional[bool] = False,
 ) -> Union[np.ndarray, pt.Tensor]:
@@ -684,11 +682,6 @@ def si_sdr(
         to computation of the metrics (default: ``False``)
     clamp_db:
         If provided, the resulting metrics are clamped to be in the range ``[-clamp_db, clamp_db]``
-    load_diag:
-        If provided, this small value is added to the diagonal coefficients of
-        the system metrics when solving for the filter coefficients.
-        This can help stabilize the metric in the case where some of the reference
-        signals may sometimes be zero
     return_perm:
         If set to True, the optimal permutation of the estimated signals is
         also returned (default: ``False``)
@@ -711,7 +704,6 @@ def si_sdr(
         est,
         zero_mean=zero_mean,
         clamp_db=clamp_db,
-        load_diag=load_diag,
         return_perm=return_perm,
         change_sign=change_sign,
     )
@@ -722,7 +714,6 @@ def si_sdr_loss(
     ref: Union[np.ndarray, pt.Tensor],
     zero_mean: Optional[bool] = False,
     clamp_db: Optional[float] = None,
-    load_diag: Optional[float] = None,
     pairwise: Optional[bool] = False,
 ) -> Union[np.ndarray, pt.Tensor]:
     """
@@ -744,11 +735,6 @@ def si_sdr_loss(
         to computation of the metrics (default: ``False``)
     clamp_db:
         If provided, the resulting metrics are clamped to be in the range ``[-clamp_db, clamp_db]``
-    load_diag:
-        If provided, this small value is added to the diagonal coefficients of
-        the system metrics when solving for the filter coefficients.
-        This can help stabilize the metric in the case where some of the reference
-        signals may sometimes be zero
     pairwise:
         If set to True, the metrics are computed for every est/ref signals pair (default: ``False``).
         When set to False, it is expected that ``n_channels_ref == n_channels_est``.
@@ -769,7 +755,6 @@ def si_sdr_loss(
         zero_mean=zero_mean,
         clamp_db=clamp_db,
         pairwise=pairwise,
-        load_diag=load_diag,
     )
 
 def si_sdr_pit_loss(
@@ -777,7 +762,6 @@ def si_sdr_pit_loss(
     ref: Union[np.ndarray, pt.Tensor],
     zero_mean: Optional[bool] = False,
     clamp_db: Optional[float] = None,
-    load_diag: Optional[float] = None,
 ) -> Union[np.ndarray, pt.Tensor]:
     """
     Computes the negative scale-invariant signal-to-distortion ratio (SDR) with
@@ -801,11 +785,6 @@ def si_sdr_pit_loss(
         to computation of the metrics (default: ``False``)
     clamp_db:
         If provided, the resulting metrics are clamped to be in the range ``[-clamp_db, clamp_db]``
-    load_diag:
-        If provided, this small value is added to the diagonal coefficients of
-        the system metrics when solving for the filter coefficients.
-        This can help stabilize the metric in the case where some of the reference
-        signals may sometimes be zero
 
     Returns
     -------
@@ -823,6 +802,4 @@ def si_sdr_pit_loss(
         ref,
         zero_mean=zero_mean,
         clamp_db=clamp_db,
-        pairwise=pairwise,
-        load_diag=load_diag,
     )

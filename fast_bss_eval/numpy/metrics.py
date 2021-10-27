@@ -33,6 +33,7 @@ from .helpers import (
 )
 from .linalg import toeplitz, block_toeplitz
 
+
 def square_cosine_metrics_length_one_filter(
     ref: np.ndarray,
     est: np.ndarray,
@@ -46,11 +47,11 @@ def square_cosine_metrics_length_one_filter(
     """
 
     if zero_mean:
-        ref = _remove_mean(ref, dim=-1)
-        est = _remove_mean(est, dim=-1)
+        ref = _remove_mean(ref, axis=-1)
+        est = _remove_mean(est, axis=-1)
 
-    ref = _normalize(ref, dim=-1)
-    est = _normalize(est, dim=-1)
+    ref = _normalize(ref, axis=-1)
+    est = _normalize(est, axis=-1)
 
     if pairwise or with_coh_sar:
         xcorr = np.einsum("...cn,...dn->...cd", ref, est)
@@ -134,9 +135,7 @@ def compute_stats(
 
 
 def compute_stats_2(
-    x: np.ndarray,
-    y: np.ndarray,
-    length: Optional[int] = None,
+    x: np.ndarray, y: np.ndarray, length: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute the auto correlation function of x and its cross-correlation with y.
@@ -236,7 +235,12 @@ def sdr_loss(
 
     if filter_length == 1:
         coh = square_cosine_metrics_length_one_filter(
-            ref, est, zero_mean=zero_mean, load_diag=None, with_coh_sar=False
+            ref,
+            est,
+            zero_mean=zero_mean,
+            load_diag=None,
+            pairwise=pairwise,
+            with_coh_sar=False,
         )
 
     else:
@@ -295,6 +299,7 @@ def sdr_pit_loss(
         zero_mean=zero_mean,
         clamp_db=clamp_db,
         load_diag=load_diag,
+        change_sign=True,
         return_perm=False,
     )
 
