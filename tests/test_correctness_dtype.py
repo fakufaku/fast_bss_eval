@@ -254,8 +254,25 @@ def test_sdr_loss(is_torch, is_fp32, clamp_db, use_cg_iter, zero_mean, load_diag
         zero_mean=zero_mean,
         load_diag=load_diag,
     )
+
+    # sdr_loss does not solve for the permutation,
+    # but the ordering of estimated sources matches
+    # the references in _random_input_pairs
     sdr2 = fast_bss_eval.sdr_loss(
         est,
+        ref,
+        clamp_db=clamp_db,
+        use_cg_iter=use_cg_iter,
+        zero_mean=zero_mean,
+        load_diag=load_diag,
+    )
+
+    if isinstance(est, torch.Tensor):
+        est_perm = est.flip(dims=(1,))
+    else:
+        est_perm = est[:, ::-1, :]
+    sdr3 = fast_bss_eval.sdr_pit_loss(
+        est_perm,
         ref,
         clamp_db=clamp_db,
         use_cg_iter=use_cg_iter,
@@ -269,3 +286,81 @@ def test_sdr_loss(is_torch, is_fp32, clamp_db, use_cg_iter, zero_mean, load_diag
         tol = 1e-5
 
     assert abs(sdr1 + sdr2).max() < tol
+    assert abs(sdr1 + sdr3).max() < tol
+
+@pytest.mark.parametrize(
+    "is_torch,is_fp32,clamp_db,zero_mean",
+    [
+        (False, False, 30, False),
+        (False, True, 30, False),
+        (True, True, 30, False),
+        (True, False, 30, False),
+        (False, False, None, False),
+        (False, False, None, True),
+        (True, True, None, False),
+        (True, True, None, True),
+    ],
+)
+def test_sdr_loss(is_torch, is_fp32, clamp_db, zero_mean):
+    """
+    Tests that the type of the output is the same as that of the input
+    """
+    b = 1  # batch
+    c = 2  # channels
+    n = 16000  # samples
+
+    ref, est = _random_input_pairs(
+        b,
+        c,
+        n,
+        is_torch=is_torch,
+        matrix_factor=0.1,
+        noise_factor=0.01,
+        is_fp32=is_fp32,
+    )
+
+    sdr1 = fast_bss_eval.si_sdr(
+        ref,
+        est,
+        clamp_db=clamp_db,
+        zero_mean=zero_mean,
+    )
+
+    # sdr_loss does not solve for the permutation,
+    # but the ordering of estimated sources matches
+    # the references in _random_input_pairs
+    sdr2 = fast_bss_eval.si_sdr_loss(
+        est,
+        ref,
+        clamp_db=clamp_db,
+        zero_mean=zero_mean,
+    )
+
+    if isinstance(est, torch.Tensor):
+        est_perm = est.flip(dims=(1,))
+    else:
+        est_perm = est[:, ::-1, :]
+
+    sdr3 = fast_bss_eval.si_sdr_pit_loss(
+        est_perm,
+        ref,
+        clamp_db=clamp_db,
+        zero_mean=zero_mean,
+    )
+
+    sdr4, *_ = fast_bss_eval.si_bss_eval_sources(
+            ref,
+            est_perm,
+            clamp_db=clamp_db,
+            zero_mean=zero_mean
+            )
+
+    if is_fp32 is not None:
+        tol = 1e-2
+    else:
+        tol = 1e-5
+
+    assert abs(sdr1 + sdr2).max() < tol
+    assert abs(sdr1 + sdr3).max() < tol
+    assert abs(sdr1 - sdr4).max() < tol
+

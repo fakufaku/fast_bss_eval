@@ -25,7 +25,7 @@ import torch
 from .hungarian import linear_sum_assignment
 
 
-def _remove_mean(x: torch.Tensor, dim=-1) -> torch.Tensor:
+def _remove_mean(x: torch.Tensor, dim: Optional[int] = -1) -> torch.Tensor:
     return x - x.mean(dim=dim, keepdim=True)
 
 
@@ -58,9 +58,7 @@ def _coherence_to_neg_sdr(
 
 
 def _solve_permutation(
-    target_loss_matrix: torch.Tensor,
-    *args,
-    return_perm=False,
+    target_loss_matrix: torch.Tensor, *args, return_perm=False,
 ) -> Tuple[torch.Tensor]:
     """
     Solve the permutation in numpy for now
