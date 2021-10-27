@@ -33,10 +33,10 @@ To work with torch tensors, ``pytorch`` should also be installed obviously.
 
     pip install fast-bss-eval
 
-Assuming you have multichannel signals for the estmated and reference sources
+Assuming you have multichannel signals for the estimated and reference sources
 stored in wav format files names ``my_estimate_file.wav`` and
 ``my_reference_file.wav``, respectively, you can quickly evaluate the bss_eval
-metrics as follows.
+metrics as follows with the function :py:func:`bss_eval_sources` and :py:func:`sdr`.
 
 .. code-block:: python
 
@@ -54,8 +54,43 @@ metrics as follows.
     # compute the SDR only
     sdr = fast_bss_eval.sdr(ref.T, est.T)
 
-There are three functions implemented, :func:`bss_eval_sources`,
-:func:`sdr`, and :func:`sdr_loss`.
+You can use the :py:func:`sdr_pit_loss` and :py:func:`sdr_loss` to train separation networks with
+`pytorch`_ and
+`torchaudio <https://github.com/pytorch/audio>`_.
+The difference with the regular functions is as follows.
+
+- reverse order of ``est`` and ``ref`` to follow pytorch convention
+- sign of SDR is changed to act as a loss function
+
+For permutation invariant training (PIT), use :py:func:`sdr_pit_loss`.  Use
+:py:func:`sdr_loss` if the assignement of estimates to references is known, or
+to compute the pairwise metrics.
+
+.. code-block:: python
+
+    import torchaudio
+
+    # open the files, we assume the sampling rate is known
+    # to be the same
+    ref, fs = torchaudio.load("my_reference_file.wav")
+    est, _ = torchaudio.load("my_estimate_file.wav")
+
+    # PIT loss for permutation invariant training
+    neg_sdr = fast_bss_eval.sdr_pit_loss(est, ref)
+
+    # when the assignemnt of estimates to references is known
+    neg_sdr = fast_bss_eval.sdr_loss(est, ref)
+
+To summarize, there are four functions implemented, :func:`bss_eval_sources`,
+:func:`sdr`, and :func:`sdr_pit_loss`, and :func:`sdr_loss`.
+The **scale-invariant** [3]_ versions of all these functions are available in functions pre-fixed by ``si_``, i.e.,
+
+* :py:func:`si_bss_eval_sources`
+* :py:func:`si_sdr`
+* :py:func:`si_sdr_pit_loss`
+* :py:func:`si_sdr_loss`.
+
+Alternatively, the regular functions with keyword argument ``filter_length=1`` can be used.
 
 .. note::
 
@@ -71,7 +106,6 @@ There are three functions implemented, :func:`bss_eval_sources`,
           archivePrefix={arXiv},
           primaryClass={eess.AS}
         }
-
 
 Benchmark
 ---------
@@ -215,8 +249,8 @@ The source code for this package is released under `MIT License
 <https://opensource.org/licenses/MIT>`_ and available on `github
 <https://github.com/fakufaku/fast_bss_eval>`_.
 
-References
-----------
+Bibliography
+------------
 
 .. [1] E. Vincent, R. Gribonval, and C. Fevotte, *Performance measurement in
     blind audio source separation*, IEEE Trans. Audio Speech Lang. Process., vol.
@@ -243,6 +277,7 @@ try:
 
     has_torch = True
     from . import torch as torch
+    from .torch import sdr_pit_loss, si_sdr_pit_loss
 except ImportError:
     has_torch = False
 
@@ -356,7 +391,7 @@ def sdr(
     Compute the signal-to-distortion ratio (SDR) only.
 
     This function computes the SDR for all pairs of est/ref signals and finds the
-    permutation maximizing the sum of all SDRs. This is unlike :py:func:`fast_bss_eval.bss_eval_sources`
+    permutation maximizing the sum of all SDRs. This is unlike :py:func:`bss_eval_sources`
     that uses the SIR.
 
     The order of ``ref``/``est`` follows the convention of bss_eval (i.e., ref first).
@@ -395,7 +430,7 @@ def sdr(
 
     Returns
     -------
-    cisdr:
+    sdr:
         The SDR of the input signal ``shape == (..., n_channels_est)``
     perm:
         The index of the corresponding reference signal ``shape == (..., n_channels_est)``.
@@ -478,6 +513,314 @@ def sdr_loss(
         ref,
         filter_length=filter_length,
         use_cg_iter=use_cg_iter,
+        zero_mean=zero_mean,
+        clamp_db=clamp_db,
+        pairwise=pairwise,
+        load_diag=load_diag,
+    )
+
+def sdr_pit_loss(
+    est: Union[np.ndarray, pt.Tensor],
+    ref: Union[np.ndarray, pt.Tensor],
+    filter_length: Optional[int] = 512,
+    use_cg_iter: Optional[int] = None,
+    zero_mean: Optional[bool] = False,
+    clamp_db: Optional[float] = None,
+    load_diag: Optional[float] = None,
+) -> Union[np.ndarray, pt.Tensor]:
+    """
+    Computes the negative signal-to-distortion ratio (SDR) with the PIT loss
+    (permutation invariant training).  This means the permutation of sources
+    minimizing the loss is chosen.
+
+    This function is similar to :py:func:`fast_bss_eval.sdr` and :py:func:`fast_bss_eval.sdr_loss`, but with,
+
+    * negative sign to make it a *loss* function
+    * ``est``/``ref`` arguments follow the convention of pytorch loss functions (i.e., ``est`` first).
+    * pairwise and permutation solving is used (a.k.a. PIT, permutation invariant training)
+
+    Parameters
+    ----------
+    est:
+        The estimated signals ``shape == (..., n_channels_est, n_samples)``
+    ref:
+        The groundtruth reference signals ``shape == (..., n_channels_ref, n_samples)``
+    filter_length:
+        The length of the distortion filter allowed (default: ``512``)
+    use_cg_iter:
+        If provided, an iterative method is used to solve for the distortion
+        filter coefficients instead of direct Gaussian elimination.
+        This can speed up the computation of the metrics in case the filters
+        are long. Using a value of 10 here has been shown to provide
+        good accuracy in most cases and is sufficient when using this
+        loss to train neural separation networks.
+    zero_mean:
+        When set to True, the mean of all signals is subtracted prior
+        to computation of the metrics (default: ``False``)
+    clamp_db:
+        If provided, the resulting metrics are clamped to be in the range ``[-clamp_db, clamp_db]``
+    load_diag:
+        If provided, this small value is added to the diagonal coefficients of
+        the system metrics when solving for the filter coefficients.
+        This can help stabilize the metric in the case where some of the reference
+        signals may sometimes be zero
+
+    Returns
+    -------
+    :
+        The negative SDR of the input signal after solving for the optimal permutation.
+        This is equivalent to using ``sdr_loss`` with ``pairwise=True`` with a PIT loss.
+        The returned tensor has
+
+        * ``shape == (..., n_channels_est)`` if ``pairwise == False``
+    """
+    return _dispatch_backend(
+        numpy.sdr_pit_loss,
+        torch.sdr_pit_loss,
+        est,
+        ref,
+        filter_length=filter_length,
+        use_cg_iter=use_cg_iter,
+        zero_mean=zero_mean,
+        clamp_db=clamp_db,
+        pairwise=pairwise,
+        load_diag=load_diag,
+    )
+
+def si_bss_eval_sources(
+    ref: Union[np.ndarray, pt.Tensor],
+    est: Union[np.ndarray, pt.Tensor],
+    zero_mean: Optional[bool] = False,
+    clamp_db: Optional[float] = None,
+    compute_permutation: Optional[bool] = True,
+    load_diag: Optional[float] = None,
+) -> Union[Tuple[np.ndarray, ...], Tuple[pt.Tensor, ...]]:
+    """
+    This function computes the scale-invariant metrics, SI-SDR, SI-SIR, and
+    SI-SAR, for the input reference and estimated signals.
+
+    The order of ``ref``/``est`` follows the convention of bss_eval (i.e., ref first).
+
+    Parameters
+    ----------
+    ref:
+        The estimated signals, ``shape == (..., n_channels_est, n_samples)``
+    est:
+        The groundtruth reference signals, ``shape ==  (..., n_channels_ref, n_samples)``
+    zero_mean:
+        When set to True, the mean of all signals is subtracted prior
+        to computation of the metrics (default: ``False``)
+    clamp_db:
+        If provided, the resulting metrics are clamped to be in the range ``[-clamp_db, clamp_db]``
+    compute_permutation:
+        When this flag is true, the optimal permutation of the estimated signals
+        to maximize the SIR is computed (default: ``True``)
+    load_diag:
+        If provided, this small value is added to the diagonal coefficients of
+        the system metrics when solving for the filter coefficients.
+        This can help stabilize the metric in the case where some of the reference
+        signals may sometimes be zero
+
+    Returns
+    -------
+    si-sdr:
+        The signal-to-distortion-ratio (SDR), ``shape == (..., n_channels_est)``
+    si-sir:
+        The signal-to-interference-ratio (SIR), ``shape == (..., n_channels_est)``
+    si-sar:
+        The signal-to-interference-ratio (SIR), ``shape == (..., n_channels_est)``
+    perm:
+        The index of the corresponding reference signal (only when
+        ``compute_permutation == True``), ``shape == (..., n_channels_est)``
+    """
+
+    return _dispatch_backend(
+        numpy.si_bss_eval_sources,
+        torch.si_bss_eval_sources,
+        ref,
+        est,
+        zero_mean=zero_mean,
+        clamp_db=clamp_db,
+        compute_permutation=compute_permutation,
+        load_diag=load_diag,
+    )
+
+
+def si_sdr(
+    ref: Union[np.ndarray, pt.Tensor],
+    est: Union[np.ndarray, pt.Tensor],
+    zero_mean: Optional[bool] = False,
+    clamp_db: Optional[float] = None,
+    load_diag: Optional[float] = None,
+    return_perm: Optional[bool] = False,
+    change_sign: Optional[bool] = False,
+) -> Union[np.ndarray, pt.Tensor]:
+    """
+    Compute the scale-invariant signal-to-distortion ratio (SI-SDR) only.
+
+    This function computes the SDR for all pairs of est/ref signals and finds the
+    permutation maximizing the sum of all SDRs. This is unlike :py:func:`fast_bss_eval.bss_eval_sources`
+    that uses the SIR.
+
+    The order of ``ref``/``est`` follows the convention of bss_eval (i.e., ref first).
+
+    Parameters
+    ----------
+    ref:
+        The estimated signals, ``shape == (..., n_channels_est, n_samples)``
+    est:
+        The groundtruth reference signals, ``shape == (..., n_channels_ref, n_samples)``
+    filter_length:
+        The length of the distortion filter allowed (default: ``512``)
+    use_cg_iter:
+        If provided, an iterative method is used to solve for the distortion
+        filter coefficients instead of direct Gaussian elimination.
+        This can speed up the computation of the metrics in case the filters
+        are long. Using a value of 10 here has been shown to provide
+        good accuracy in most cases and is sufficient when using this
+        loss to train neural separation networks.
+    zero_mean:
+        When set to True, the mean of all signals is subtracted prior
+        to computation of the metrics (default: ``False``)
+    clamp_db:
+        If provided, the resulting metrics are clamped to be in the range ``[-clamp_db, clamp_db]``
+    load_diag:
+        If provided, this small value is added to the diagonal coefficients of
+        the system metrics when solving for the filter coefficients.
+        This can help stabilize the metric in the case where some of the reference
+        signals may sometimes be zero
+    return_perm:
+        If set to True, the optimal permutation of the estimated signals is
+        also returned (default: ``False``)
+    change_sign:
+        If set to True, the sign is flipped and the negative SDR is returned
+        (default: ``False``)
+
+    Returns
+    -------
+    si-sdr:
+        The SDR of the input signal ``shape == (..., n_channels_est)``
+    perm:
+        The index of the corresponding reference signal ``shape == (..., n_channels_est)``.
+        Only returned if ``return_perm == True``
+    """
+    return _dispatch_backend(
+        numpy.si_sdr,
+        torch.si_sdr,
+        ref,
+        est,
+        zero_mean=zero_mean,
+        clamp_db=clamp_db,
+        load_diag=load_diag,
+        return_perm=return_perm,
+        change_sign=change_sign,
+    )
+
+
+def si_sdr_loss(
+    est: Union[np.ndarray, pt.Tensor],
+    ref: Union[np.ndarray, pt.Tensor],
+    zero_mean: Optional[bool] = False,
+    clamp_db: Optional[float] = None,
+    load_diag: Optional[float] = None,
+    pairwise: Optional[bool] = False,
+) -> Union[np.ndarray, pt.Tensor]:
+    """
+    Computes the negative scale-invariant signal-to-distortion ratio (SI-SDR).
+
+    This function is almost the same as :py:func:`fast_bss_eval.sdr` except for
+
+    * negative sign to make it a *loss* function
+    * ``est``/``ref`` arguments follow the convention of pytorch loss functions (i.e., ``est`` first).
+
+    Parameters
+    ----------
+    est:
+        The estimated signals ``shape == (..., n_channels_est, n_samples)``
+    ref:
+        The groundtruth reference signals ``shape == (..., n_channels_ref, n_samples)``
+    zero_mean:
+        When set to True, the mean of all signals is subtracted prior
+        to computation of the metrics (default: ``False``)
+    clamp_db:
+        If provided, the resulting metrics are clamped to be in the range ``[-clamp_db, clamp_db]``
+    load_diag:
+        If provided, this small value is added to the diagonal coefficients of
+        the system metrics when solving for the filter coefficients.
+        This can help stabilize the metric in the case where some of the reference
+        signals may sometimes be zero
+    pairwise:
+        If set to True, the metrics are computed for every est/ref signals pair (default: ``False``).
+        When set to False, it is expected that ``n_channels_ref == n_channels_est``.
+
+    Returns
+    -------
+    :
+        The negative SI-SDR of the input signal. The returned tensor has
+
+        * ``shape == (..., n_channels_est)`` if ``pairwise == False``
+        * ``shape == (..., n_channels_ref, n_channels_est)`` if ``pairwise == True``.
+    """
+    return _dispatch_backend(
+        numpy.si_sdr_loss,
+        torch.si_sdr_loss,
+        est,
+        ref,
+        zero_mean=zero_mean,
+        clamp_db=clamp_db,
+        pairwise=pairwise,
+        load_diag=load_diag,
+    )
+
+def si_sdr_pit_loss(
+    est: Union[np.ndarray, pt.Tensor],
+    ref: Union[np.ndarray, pt.Tensor],
+    zero_mean: Optional[bool] = False,
+    clamp_db: Optional[float] = None,
+    load_diag: Optional[float] = None,
+) -> Union[np.ndarray, pt.Tensor]:
+    """
+    Computes the negative scale-invariant signal-to-distortion ratio (SDR) with
+    the PIT loss (permutation invariant training).  This means the permutation
+    of sources minimizing the loss is chosen.
+
+    This function is similar to :py:func:`fast_bss_eval.sdr` and :py:func:`fast_bss_eval.sdr_loss`, but with,
+
+    * negative sign to make it a *loss* function
+    * ``est``/``ref`` arguments follow the convention of pytorch loss functions (i.e., ``est`` first).
+    * pairwise and permutation solving is used (a.k.a. PIT, permutation invariant training)
+
+    Parameters
+    ----------
+    est:
+        The estimated signals ``shape == (..., n_channels_est, n_samples)``
+    ref:
+        The groundtruth reference signals ``shape == (..., n_channels_ref, n_samples)``
+    zero_mean:
+        When set to True, the mean of all signals is subtracted prior
+        to computation of the metrics (default: ``False``)
+    clamp_db:
+        If provided, the resulting metrics are clamped to be in the range ``[-clamp_db, clamp_db]``
+    load_diag:
+        If provided, this small value is added to the diagonal coefficients of
+        the system metrics when solving for the filter coefficients.
+        This can help stabilize the metric in the case where some of the reference
+        signals may sometimes be zero
+
+    Returns
+    -------
+    :
+        The negative SDR of the input signal after solving for the optimal permutation.
+        This is equivalent to using ``sdr_loss`` with ``pairwise=True`` with a PIT loss.
+        The returned tensor has
+
+        * ``shape == (..., n_channels_est)`` if ``pairwise == False``
+    """
+    return _dispatch_backend(
+        numpy.si_sdr_pit_loss,
+        torch.si_sdr_pit_loss,
+        est,
+        ref,
         zero_mean=zero_mean,
         clamp_db=clamp_db,
         pairwise=pairwise,

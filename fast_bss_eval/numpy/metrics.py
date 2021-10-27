@@ -33,6 +33,49 @@ from .helpers import (
 )
 from .linalg import toeplitz, block_toeplitz
 
+def square_cosine_metrics_length_one_filter(
+    ref: np.ndarray,
+    est: np.ndarray,
+    zero_mean: Optional[bool] = False,
+    pairwise: Optional[bool] = True,
+    load_diag: Optional[float] = None,
+    with_coh_sar: Optional[bool] = True,
+) -> Tuple[np.ndarray, ...]:
+    """
+    Special case of computing cosine metrics with filter length of 1
+    """
+
+    if zero_mean:
+        ref = _remove_mean(ref, dim=-1)
+        est = _remove_mean(est, dim=-1)
+
+    ref = _normalize(ref, dim=-1)
+    est = _normalize(est, dim=-1)
+
+    if pairwise or with_coh_sar:
+        xcorr = np.einsum("...cn,...dn->...cd", ref, est)
+
+    if pairwise:
+        coh_sdr = xcorr
+    else:
+        coh_sdr = np.einsum("...n,...n->...", ref, est)
+    coh_sdr = np.square(coh_sdr)
+
+    if with_coh_sar:
+        acm = np.einsum("...cn,...dn->...cd", ref, ref)
+        if load_diag is not None:
+            acm = acm + np.eye(acm.shape[-1]) * load_diag
+        sol = np.linalg.solve(acm, xcorr)
+        coh_sar = np.einsum("...lc,...lc->...c", xcorr, sol)
+
+        if pairwise:
+            coh_sdr, coh_sar = np.broadcast_arrays(coh_sdr, coh_sar[..., None, :])
+
+        return coh_sdr, coh_sar
+
+    else:
+        return coh_sdr
+
 
 def compute_stats(
     x: np.ndarray,
@@ -191,41 +234,69 @@ def sdr_loss(
         (..., n_channels_ref, n_channels_est) if ``pairwise == True``.
     """
 
-    if zero_mean:
-        est = _remove_mean(est)
-        ref = _remove_mean(ref)
+    if filter_length == 1:
+        coh = square_cosine_metrics_length_one_filter(
+            ref, est, zero_mean=zero_mean, load_diag=None, with_coh_sar=False
+        )
 
-    # normalize along time-axis
-    est = _normalize(est, axis=-1)
-    ref = _normalize(ref, axis=-1)
-
-    # compute auto-correlation and cross-correlation
-    acf, xcorr = compute_stats(ref, est, length=filter_length, pairwise=pairwise)
-
-    if load_diag is not None:
-        # the diagonal factor of the Toeplitz matrix is the first
-        # coefficient of the acf
-        acf[..., 0] += load_diag
-
-    # solve for the optimal filter
-    if use_cg_iter is None:
-        # regular matrix solver
-        R_mat = toeplitz(acf)
-        sol = np.linalg.solve(R_mat, xcorr)
     else:
-        # use preconditioned conjugate gradient
-        sol = toeplitz_conjugate_gradient(acf, xcorr, n_iter=use_cg_iter)
 
-    # compute the coherence
-    if pairwise:
-        coh = np.einsum("...lc,...lc->...c", xcorr, sol)
-    else:
-        coh = np.einsum("...l,...l->...", xcorr, sol)
+        if zero_mean:
+            est = _remove_mean(est)
+            ref = _remove_mean(ref)
+
+        # normalize along time-axis
+        est = _normalize(est, axis=-1)
+        ref = _normalize(ref, axis=-1)
+
+        # compute auto-correlation and cross-correlation
+        acf, xcorr = compute_stats(ref, est, length=filter_length, pairwise=pairwise)
+
+        if load_diag is not None:
+            # the diagonal factor of the Toeplitz matrix is the first
+            # coefficient of the acf
+            acf[..., 0] += load_diag
+
+        # solve for the optimal filter
+        if use_cg_iter is None:
+            # regular matrix solver
+            R_mat = toeplitz(acf)
+            sol = np.linalg.solve(R_mat, xcorr)
+        else:
+            # use preconditioned conjugate gradient
+            sol = toeplitz_conjugate_gradient(acf, xcorr, n_iter=use_cg_iter)
+
+        # compute the coherence
+        if pairwise:
+            coh = np.einsum("...lc,...lc->...c", xcorr, sol)
+        else:
+            coh = np.einsum("...l,...l->...", xcorr, sol)
 
     # transform to decibels
     neg_cisdr = _coherence_to_neg_sdr(coh, clamp_db=clamp_db)
 
     return neg_cisdr
+
+
+def sdr_pit_loss(
+    est: np.ndarray,
+    ref: np.ndarray,
+    filter_length: Optional[int] = 512,
+    use_cg_iter: Optional[int] = None,
+    zero_mean: Optional[bool] = False,
+    clamp_db: Optional[float] = None,
+    load_diag: Optional[float] = None,
+) -> np.ndarray:
+    return sdr(
+        ref,
+        est,
+        filter_length=filter_length,
+        use_cg_iter=use_cg_iter,
+        zero_mean=zero_mean,
+        clamp_db=clamp_db,
+        load_diag=load_diag,
+        return_perm=False,
+    )
 
 
 def pairwise_sdr_loss(
@@ -418,6 +489,17 @@ def square_cosine_metrics(
     neg_cisdr: np.ndarray, (..., n_channels_ref, n_channels_est)
         The negative SDR of the input signal
     """
+
+    # In this case, we can compute things more efficiently
+    if filter_length == 1:
+        return square_cosine_metrics_length_one_filter(
+            ref,
+            est,
+            zero_mean=zero_mean,
+            pairwise=pairwise,
+            load_diag=load_diag,
+            with_coh_sar=True,
+        )
 
     if zero_mean:
         est = _remove_mean(est)
