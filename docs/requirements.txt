@@ -1,4 +1,4 @@
 sphinx
-karma-sphinx-theme
+furo
 sphinx-autodoc-typehints
 -e .
