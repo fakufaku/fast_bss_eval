@@ -220,7 +220,7 @@ As described above, computing the bss_eval metrics requires to solve the systems
 
 for all :math:`k` and :math:`m`.  These system matrices are large and solving
 directly, e.g., using ``numpy.linalg.solve``, can be expensive.  However, these
-matrices are also structures (`Toeplitz
+matrices are also structured (`Toeplitz
 <https://en.wikipedia.org/wiki/Toeplitz_matrix>`_ and block-Toeplitz).  In this
 case, we can apply a much more efficient iterative algorithm based on
 `preconditioned conjugate gradient descent
