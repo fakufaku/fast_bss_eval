@@ -25,6 +25,15 @@ from .metrics import (
     bss_eval_sources,
     square_cosine_metrics,
     sdr_loss,
+    sdr_pit_loss,
     pairwise_sdr_loss,
     sdr,
+)
+
+from .scale_invariant import (
+    si_bss_eval_sources,
+    si_sdr_loss,
+    pairwise_si_sdr_loss,
+    si_sdr_pit_loss,
+    si_sdr,
 )

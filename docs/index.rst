@@ -45,7 +45,17 @@ API
 
 .. autofunction:: fast_bss_eval.sdr
 
+.. autofunction:: fast_bss_eval.sdr_pit_loss
+
 .. autofunction:: fast_bss_eval.sdr_loss
+
+.. autofunction:: fast_bss_eval.si_bss_eval_sources
+
+.. autofunction:: fast_bss_eval.si_sdr
+
+.. autofunction:: fast_bss_eval.si_sdr_pit_loss
+
+.. autofunction:: fast_bss_eval.si_sdr_loss
 
 Indices and tables
 ==================
