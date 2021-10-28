@@ -5,7 +5,12 @@ import torch
 
 
 def _random_input_pairs(
-    nbatch, nchan, nsamples, is_fp32=False, is_torch=False, rand_perm=True,
+    nbatch,
+    nchan,
+    nsamples,
+    is_fp32=False,
+    is_torch=False,
+    rand_perm=True,
 ):
     assert nsamples >= 2 * nchan
 
@@ -53,7 +58,6 @@ def _random_input_pairs(
         inv_perm[perm[i]] = i
     inv_perm = inv_perm[None, :]
 
-
     # change type
     if is_fp32:
         est = est.astype(np.float32)
@@ -96,13 +100,22 @@ def test_si_sdr(is_torch, is_fp32, rand_perm, tol):
     for trial in range(10):
 
         ref, est, SDR, SIR, SAR, PERM = _random_input_pairs(
-            nbatch, nchan, nsamples, rand_perm=rand_perm, is_torch=is_torch, is_fp32=is_fp32
+            nbatch,
+            nchan,
+            nsamples,
+            rand_perm=rand_perm,
+            is_torch=is_torch,
+            is_fp32=is_fp32,
         )
 
         sdr, sir, sar, *other = fast_bss_eval.si_bss_eval_sources(
             ref, est, compute_permutation=rand_perm
         )
-        test_pairs = [("sdr", sdr, SDR, tol), ("sir", sir, SIR, tol), ("sar", sar, SAR, 1e2 * tol)]
+        test_pairs = [
+            ("sdr", sdr, SDR, tol),
+            ("sir", sir, SIR, tol),
+            ("sar", sar, SAR, 1e2 * tol),
+        ]
         if rand_perm:
             test_pairs.append(("perm", other[0], PERM, 0))
 
@@ -110,13 +123,16 @@ def test_si_sdr(is_torch, is_fp32, rand_perm, tol):
             sdr2, perm2 = fast_bss_eval.si_sdr(ref, est, return_perm=True)
             sdr3 = fast_bss_eval.si_sdr_pit_loss(est, ref)
             test_pairs += [
-                    ("sdr2", sdr2, SDR, tol), ("perm2", perm2, PERM, 0), ("sdr3", -sdr3, SDR, tol)
-                    ]
+                ("sdr2", sdr2, SDR, tol),
+                ("perm2", perm2, PERM, 0),
+                ("sdr3", -sdr3, SDR, tol),
+            ]
         else:
             sdr4 = fast_bss_eval.si_sdr_loss(est, ref)
             test_pairs += [("sdr4", -sdr4, SDR, tol)]
 
-
         for label, r1, r2, loc_tol in test_pairs:
             error = abs(r1 - r2).max()
-            assert error <= loc_tol, f"{label} (error={error} > tol={loc_tol}) (trial={trial})"
+            assert (
+                error <= loc_tol
+            ), f"{label} (error={error} > tol={loc_tol}) (trial={trial})"

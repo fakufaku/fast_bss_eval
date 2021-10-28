@@ -288,6 +288,7 @@ def test_sdr_loss(is_torch, is_fp32, clamp_db, use_cg_iter, zero_mean, load_diag
     assert abs(sdr1 + sdr2).max() < tol
     assert abs(sdr1 + sdr3).max() < tol
 
+
 @pytest.mark.parametrize(
     "is_torch,is_fp32,clamp_db,zero_mean",
     [
@@ -349,11 +350,8 @@ def test_sdr_loss(is_torch, is_fp32, clamp_db, zero_mean):
     )
 
     sdr4, *_ = fast_bss_eval.si_bss_eval_sources(
-            ref,
-            est_perm,
-            clamp_db=clamp_db,
-            zero_mean=zero_mean
-            )
+        ref, est_perm, clamp_db=clamp_db, zero_mean=zero_mean
+    )
 
     if is_fp32 is not None:
         tol = 1e-2
@@ -363,4 +361,3 @@ def test_sdr_loss(is_torch, is_fp32, clamp_db, zero_mean):
     assert abs(sdr1 + sdr2).max() < tol
     assert abs(sdr1 + sdr3).max() < tol
     assert abs(sdr1 - sdr4).max() < tol
-

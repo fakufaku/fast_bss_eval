@@ -58,7 +58,9 @@ def _coherence_to_neg_sdr(
 
 
 def _solve_permutation(
-    target_loss_matrix: torch.Tensor, *args, return_perm=False,
+    target_loss_matrix: torch.Tensor,
+    *args,
+    return_perm=False,
 ) -> Tuple[torch.Tensor]:
     """
     Solve the permutation in numpy for now
