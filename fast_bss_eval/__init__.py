@@ -34,7 +34,7 @@ To work with torch tensors, ``pytorch`` should also be installed obviously.
     pip install fast-bss-eval
 
 Assuming you have multichannel signals for the estimated and reference sources
-stored in wav format files names ``my_estimate_file.wav`` and
+stored in wav format files named ``my_estimate_file.wav`` and
 ``my_reference_file.wav``, respectively, you can quickly evaluate the bss_eval
 metrics as follows with the function :py:func:`bss_eval_sources` and :py:func:`sdr`.
 
