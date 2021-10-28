@@ -175,6 +175,59 @@ def test_dtype(is_torch, is_fp32, expected_dtype):
     assert sir.dtype == expected_dtype
     assert sar.dtype == expected_dtype
 
+    sdr2 = fast_bss_eval.sdr(ref, est)
+    neg_sdr3 = fast_bss_eval.sdr_loss(ref, est)
+    neg_sdr4 = fast_bss_eval.sdr_pit_loss(ref, est)
+
+    if is_torch:
+        neg_sdr5 = fast_bss_eval.torch.pairwise_sdr_loss(ref, est)
+    else:
+        neg_sdr5 = fast_bss_eval.numpy.pairwise_sdr_loss(ref, est)
+
+    assert sdr2.dtype == expected_dtype
+    assert neg_sdr3.dtype == expected_dtype
+    assert neg_sdr4.dtype == expected_dtype
+    assert neg_sdr5.dtype == expected_dtype
+
+
+@pytest.mark.parametrize(
+    "is_torch,is_fp32,expected_dtype",
+    [
+        (False, False, np.float64),
+        (True, False, torch.float64),
+        (False, True, np.float32),
+        (True, True, torch.float32),
+    ],
+)
+def test_si_dtype(is_torch, is_fp32, expected_dtype):
+    """
+    Tests that the type of the output is the same as that of the input
+    """
+    b = 1  # batch
+    c = 2  # channels
+    n = 16000  # samples
+
+    ref, est = _random_input_pairs(b, c, n, is_torch=is_torch, is_fp32=is_fp32)
+
+    sdr, sir, sar, _ = fast_bss_eval.si_bss_eval_sources(ref, est)
+    assert sdr.dtype == expected_dtype
+    assert sir.dtype == expected_dtype
+    assert sar.dtype == expected_dtype
+
+    sdr2 = fast_bss_eval.si_sdr(ref, est)
+    neg_sdr3 = fast_bss_eval.si_sdr_loss(est, ref)
+    neg_sdr4 = fast_bss_eval.si_sdr_pit_loss(est, ref)
+
+    if is_torch:
+        neg_sdr5 = fast_bss_eval.torch.pairwise_si_sdr_loss(ref, est)
+    else:
+        neg_sdr5 = fast_bss_eval.numpy.pairwise_si_sdr_loss(ref, est)
+
+    assert sdr2.dtype == expected_dtype
+    assert neg_sdr3.dtype == expected_dtype
+    assert neg_sdr4.dtype == expected_dtype
+    assert neg_sdr5.dtype == expected_dtype
+
 
 @pytest.mark.parametrize(
     "is_torch,is_fp32,clamp_db",
@@ -246,6 +299,15 @@ def test_sdr_loss(is_torch, is_fp32, clamp_db, use_cg_iter, zero_mean, load_diag
         is_fp32=is_fp32,
     )
 
+    sdr0, *_ = fast_bss_eval.bss_eval_sources(
+        ref,
+        est,
+        clamp_db=clamp_db,
+        zero_mean=zero_mean,
+        use_cg_iter=use_cg_iter,
+        load_diag=load_diag,
+    )
+
     sdr1 = fast_bss_eval.sdr(
         ref,
         est,
@@ -285,6 +347,7 @@ def test_sdr_loss(is_torch, is_fp32, clamp_db, use_cg_iter, zero_mean, load_diag
     else:
         tol = 1e-5
 
+    assert abs(sdr0 - sdr1).max() < tol
     assert abs(sdr1 + sdr2).max() < tol
     assert abs(sdr1 + sdr3).max() < tol
 
@@ -302,7 +365,7 @@ def test_sdr_loss(is_torch, is_fp32, clamp_db, use_cg_iter, zero_mean, load_diag
         (True, True, None, True),
     ],
 )
-def test_sdr_loss(is_torch, is_fp32, clamp_db, zero_mean):
+def test_si_sdr_loss(is_torch, is_fp32, clamp_db, zero_mean):
     """
     Tests that the type of the output is the same as that of the input
     """
@@ -318,6 +381,10 @@ def test_sdr_loss(is_torch, is_fp32, clamp_db, zero_mean):
         matrix_factor=0.1,
         noise_factor=0.01,
         is_fp32=is_fp32,
+    )
+
+    sdr0, *_ = fast_bss_eval.si_bss_eval_sources(
+        ref, est, clamp_db=clamp_db, zero_mean=zero_mean
     )
 
     sdr1 = fast_bss_eval.si_sdr(
@@ -358,6 +425,7 @@ def test_sdr_loss(is_torch, is_fp32, clamp_db, zero_mean):
     else:
         tol = 1e-5
 
+    assert abs(sdr0 - sdr1).max() < tol
     assert abs(sdr1 + sdr2).max() < tol
     assert abs(sdr1 + sdr3).max() < tol
     assert abs(sdr1 - sdr4).max() < tol
