@@ -7,8 +7,11 @@ Welcome to fast_bss_eval's documentation!
 =========================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :hidden:
    :caption: Contents:
+
+   changelog
 
 .. image:: https://readthedocs.org/projects/fast-bss-eval/badge/?version=latest
    :target: https://fast-bss-eval.readthedocs.io/en/latest/?badge=latest
