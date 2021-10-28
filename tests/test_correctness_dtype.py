@@ -421,7 +421,7 @@ def test_si_sdr_loss(is_torch, is_fp32, clamp_db, zero_mean):
     )
 
     if is_fp32 is not None:
-        tol = 1e-2
+        tol = 1e-1
     else:
         tol = 1e-5
 
