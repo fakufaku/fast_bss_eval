@@ -68,7 +68,9 @@ def _coherence_to_neg_sdr(
 
 
 def _solve_permutation(
-    target_loss_matrix: np.ndarray, *args, return_perm=False,
+    target_loss_matrix: np.ndarray,
+    *args,
+    return_perm=False,
 ) -> Tuple[np.ndarray]:
     """
     Solve the permutation in numpy for now

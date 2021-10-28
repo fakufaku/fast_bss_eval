@@ -134,7 +134,9 @@ def compute_stats(
 
 
 def compute_stats_2(
-    x: torch.Tensor, y: torch.Tensor, length: Optional[int] = None,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    length: Optional[int] = None,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Compute the auto correlation function of x and its cross-correlation with y.

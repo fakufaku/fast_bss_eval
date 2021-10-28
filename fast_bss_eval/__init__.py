@@ -519,6 +519,7 @@ def sdr_loss(
         load_diag=load_diag,
     )
 
+
 def sdr_pit_loss(
     est: Union[np.ndarray, pt.Tensor],
     ref: Union[np.ndarray, pt.Tensor],
@@ -585,6 +586,7 @@ def sdr_pit_loss(
         clamp_db=clamp_db,
         load_diag=load_diag,
     )
+
 
 def si_bss_eval_sources(
     ref: Union[np.ndarray, pt.Tensor],
@@ -756,6 +758,7 @@ def si_sdr_loss(
         clamp_db=clamp_db,
         pairwise=pairwise,
     )
+
 
 def si_sdr_pit_loss(
     est: Union[np.ndarray, pt.Tensor],

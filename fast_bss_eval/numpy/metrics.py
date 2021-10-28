@@ -135,7 +135,9 @@ def compute_stats(
 
 
 def compute_stats_2(
-    x: np.ndarray, y: np.ndarray, length: Optional[int] = None,
+    x: np.ndarray,
+    y: np.ndarray,
+    length: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute the auto correlation function of x and its cross-correlation with y.
