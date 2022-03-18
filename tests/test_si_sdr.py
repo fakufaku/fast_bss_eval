@@ -33,9 +33,9 @@ def _random_input_pairs(
     # mixing coefficients
     # make sure the diagonal of alpha is larger than off-diag coeffecients
     alpha = np.random.rand(nbatch, nchan, nchan) - 0.5 + 2.0 * np.eye(nchan)
-    alpha2 = alpha ** 2
+    alpha2 = alpha**2
     beta = np.random.randn(nbatch, nchan)
-    beta2 = beta ** 2
+    beta2 = beta**2
 
     alpha2_diag = np.diagonal(alpha2, axis1=-2, axis2=-1)
     alpha2_sum = alpha2.sum(axis=-1)

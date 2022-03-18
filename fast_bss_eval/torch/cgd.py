@@ -87,7 +87,7 @@ class CirculantPreconditionerOperator:
         col_precond = optimal_symmetric_circulant_precond_column(toeplitz_col)
         C = torch.fft.rfft(col_precond, dim=-1)
         # complex pointwise inverse
-        self.C = C.conj() / torch.clamp(C.real ** 2 + C.imag ** 2, min=1e-6)
+        self.C = C.conj() / torch.clamp(C.real**2 + C.imag**2, min=1e-6)
         self.n = col_precond.shape[-1]
 
         self._shape = col_precond.shape[:-1] + (self.n, self.n)
