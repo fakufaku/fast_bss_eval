@@ -78,23 +78,22 @@ def _random_input_pairs(
 
 
 @pytest.mark.parametrize(
-    "is_torch,is_fp32,rand_perm,tol",
+    "is_torch,is_fp32,rand_perm,tol,nchan",
     [
-        (True, True, True, 1e-1),
-        (True, True, False, 1e-1),
-        (True, False, False, 1e-5),
-        (True, False, True, 1e-5),
-        (False, False, True, 1e-5),
-        (False, True, True, 1e-1),
-        (False, True, False, 1e-1),
-        (False, False, False, 1e-5),
+        (True, True, True, 1e-1, 4),
+        (True, True, False, 1e-1, 4),
+        (True, False, False, 1e-5, 4),
+        (True, False, True, 1e-5, 4),
+        (False, False, True, 1e-5, 4),
+        (False, True, True, 1e-1, 4),
+        (False, True, False, 1e-1, 4),
+        (False, False, False, 1e-5, 4),
     ],
 )
-def test_si_sdr(is_torch, is_fp32, rand_perm, tol):
+def test_si_sdr(is_torch, is_fp32, rand_perm, tol, nchan):
     np.random.seed(10)
 
     nbatch = 10
-    nchan = 4
     nsamples = 16000
 
     for trial in range(10):
