@@ -4,6 +4,7 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 import fast_bss_eval
 import fast_bss_eval.torch.hungarian as hungarian
+from fast_bss_eval.torch.helpers import _linear_sum_assignment_with_inf
 
 
 @pytest.mark.parametrize("seed", [0, 1, 2, 3, 4, 5])
@@ -39,3 +40,10 @@ def test_nan(seed, backend, n_chan=2, n_samples=4000):
 
     with pytest.raises(ValueError):
         sdr, sir, sar, perm = fast_bss_eval.bss_eval_sources(ref, est)
+
+def test_empty_input():
+    cost_matrix = torch.zeros(0)
+    out1, out2 = _linear_sum_assignment_with_inf(cost_matrix)
+
+    assert out1.numel() == 0
+    assert out2.numel() == 0
