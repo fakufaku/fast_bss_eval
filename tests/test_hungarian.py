@@ -5,22 +5,6 @@ from scipy.optimize import linear_sum_assignment
 import fast_bss_eval
 import fast_bss_eval.torch.hungarian as hungarian
 
-import signal
-
-class Timeout:
-    """
-    A class to catch timeout errors for the nan problem
-    """
-    def __init__(self, seconds=1, error_message='Timeout'):
-        self.seconds = seconds
-        self.error_message = error_message
-    def handle_timeout(self, signum, frame):
-        raise TimeoutError(self.error_message)
-    def __enter__(self):
-        signal.signal(signal.SIGALRM, self.handle_timeout)
-        signal.alarm(self.seconds)
-    def __exit__(self, type, value, traceback):
-        signal.alarm(0)
 
 @pytest.mark.parametrize("seed", [0, 1, 2, 3, 4, 5])
 @pytest.mark.parametrize("rows", [2, 3, 4, 5, 6, 10])
@@ -40,6 +24,7 @@ def test_hungarian(seed, rows, cols):
 
 @pytest.mark.parametrize("seed", [0, 1, 2])
 @pytest.mark.parametrize("backend", ["numpy", "torch"])
+@pytest.mark.timeout(2)
 def test_nan(seed, backend, n_chan=2, n_samples=4000):
 
     est = torch.zeros((n_chan, n_samples)).normal_()
@@ -53,8 +38,4 @@ def test_nan(seed, backend, n_chan=2, n_samples=4000):
         ref = ref.numpy()
 
     with pytest.raises(ValueError):
-        try:
-            with Timeout(seconds=1):
-                sdr, sir, sar, perm = fast_bss_eval.bss_eval_sources(ref, est)
-        except TimeoutError:
-            assert False, "Test nan: timeout exceeded"
+        sdr, sir, sar, perm = fast_bss_eval.bss_eval_sources(ref, est)
