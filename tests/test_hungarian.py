@@ -41,6 +41,7 @@ def test_nan(seed, backend, n_chan=2, n_samples=4000):
     with pytest.raises(ValueError):
         sdr, sir, sar, perm = fast_bss_eval.bss_eval_sources(ref, est)
 
+
 def test_empty_input():
     cost_matrix = torch.zeros(0)
     out1, out2 = _linear_sum_assignment_with_inf(cost_matrix)
