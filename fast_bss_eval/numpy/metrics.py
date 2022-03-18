@@ -120,7 +120,7 @@ def compute_stats(
     Y = fft.rfft(y, n=n_fft, axis=-1)
 
     # autocorrelation function
-    acf = fft.irfft(X.real ** 2 + X.imag ** 2, n=n_fft)
+    acf = fft.irfft(X.real**2 + X.imag**2, n=n_fft)
 
     # cross-correlation
     if pairwise:

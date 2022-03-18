@@ -11,7 +11,16 @@ adheres to `Semantic Versioning <http://semver.org/spec/v2.0.0.html>`_.
 `Unreleased`_
 -------------
 
-Nothing yet.
+New
+~~~
+
+- Removed CI for python 3.6, Added for python 3.10
+
+Bugfix
+~~~~~~
+
+- For pytorch, the permutation solver would go in an infinite loop when
+  a nan value was present. Corrected and test added.
 
 `0.1.0`_ - 2021-10-28
 ---------------------
