@@ -79,6 +79,9 @@ def linear_sum_assignment(
     5. https://en.wikipedia.org/wiki/Hungarian_algorithm
     """
 
+    if torch.any(torch.isnan(cost_matrix)):
+        raise ValueError("matrix contains invalid numeric entries")
+
     if len(cost_matrix.shape) != 2:
         raise ValueError(
             "expected a matrix (2-d array), got a %r array" % (cost_matrix.shape,)

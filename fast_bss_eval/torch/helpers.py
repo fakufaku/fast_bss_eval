@@ -21,7 +21,9 @@
 from typing import Optional, Tuple
 
 import numpy as np
+
 import torch
+
 from .hungarian import linear_sum_assignment
 
 
@@ -112,6 +114,9 @@ def _linear_sum_assignment_with_inf(
     https://github.com/scipy/scipy/issues/6900
     to handle infinite entries in the cost matrix.
     """
+
+    if cost_matrix.numel() == 0:
+        return torch.zeros(0, dtype=torch.int64), torch.zeros(0, dtype=torch.int64)
 
     min_inf = torch.isneginf(cost_matrix).any()
     max_inf = torch.isposinf(cost_matrix).any()
