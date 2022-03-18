@@ -11,6 +11,11 @@ adheres to `Semantic Versioning <http://semver.org/spec/v2.0.0.html>`_.
 `Unreleased`_
 -------------
 
+New
+~~~
+
+- Removed CI for python 3.6, Added for python 3.10
+
 Bugfix
 ~~~~~~
 
