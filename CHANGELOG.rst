@@ -11,6 +11,11 @@ adheres to `Semantic Versioning <http://semver.org/spec/v2.0.0.html>`_.
 `Unreleased`_
 -------------
 
+Nothing yet.
+
+`0.1.2`_ - 2022-03-21
+---------------------
+
 Bugfix
 ~~~~~~
 
@@ -46,6 +51,7 @@ Bugfix
 - Removes a stray ``print`` statement from ``sdr_loss``
 
 
-.. _Unreleased: https://github.com/fakufaku/fast_bss_eval/compare/v0.1.1...master
+.. _Unreleased: https://github.com/fakufaku/fast_bss_eval/compare/v0.1.2...main
+.. _0.1.2: https://github.com/fakufaku/fast_bss_eval/compare/v0.1.1...v0.1.2
 .. _0.1.1: https://github.com/fakufaku/fast_bss_eval/compare/v0.1.0...v0.1.1
 .. _0.1.0: https://github.com/fakufaku/fast_bss_eval/compare/v0.0.2...v0.1.0
