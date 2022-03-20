@@ -18,6 +18,7 @@ x = np.load("tests/data_issue_5.npz")
 preds = torch.tensor(x["preds"])
 target = torch.tensor(x["target"])
 
+
 def to(x, backend, precision):
 
     if backend == "numpy":
@@ -41,6 +42,7 @@ def to(x, backend, precision):
 
     else:
         raise ValueError("Invalid backend!")
+
 
 @pytest.mark.parametrize(
     "backend, precision",
@@ -67,10 +69,9 @@ def test_nan(backend, precision):
     # the 4th is perm, which we don't need to check
     for o in outputs[:3]:
         if backend.startswith("torch"):
-            assert not torch.any(torch.isnan(o)) 
+            assert not torch.any(torch.isnan(o))
         else:
-            assert not np.any(np.isnan(o)) 
-
+            assert not np.any(np.isnan(o))
 
 
 if __name__ == "__main__":
@@ -91,7 +92,6 @@ if __name__ == "__main__":
             sdr, sir, sar, perm = fast_bss_eval.bss_eval_sources(tgt, prd)
             print(sdr, sdr.dtype)
             print()
-
 
     for precision in ["single", "double"]:
         tgt = to(target, "numpy", precision)
