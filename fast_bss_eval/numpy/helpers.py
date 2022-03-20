@@ -59,7 +59,9 @@ def _coherence_to_neg_sdr(
     if clamp_db is not None:
         # clamp within desired decibel range
         eps = _db_clamp_eps(clamp_db)
-        coh = clamp(coh, min=eps, max=1 - eps)
+    else:
+        eps = 0.0
+    coh = clamp(coh, min=eps, max=1 - eps)
 
     ratio = (1 - coh) / coh
 
