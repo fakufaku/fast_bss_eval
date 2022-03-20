@@ -51,7 +51,11 @@ def _coherence_to_neg_sdr(
     if clamp_db is not None:
         # clamp within desired decibel range
         eps = _db_clamp_eps(clamp_db)
-        coh = torch.clamp(coh, min=eps, max=1 - eps)
+    else:
+        # theoretically the coh values should be in [0, 1],
+        # so we clamp them there to avoid numerical issues.
+        eps = 0.0
+    coh = torch.clamp(coh, min=eps, max=1 - eps)
 
     ratio = (1 - coh) / coh
 
