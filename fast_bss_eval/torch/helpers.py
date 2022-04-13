@@ -122,9 +122,16 @@ def _linear_sum_assignment_with_inf(
     if cost_matrix.numel() == 0:
         return torch.zeros(0, dtype=torch.int64), torch.zeros(0, dtype=torch.int64)
 
-    min_inf = torch.isneginf(cost_matrix).any()
-    max_inf = torch.isposinf(cost_matrix).any()
+    try:
+        min_inf = torch.isneginf(cost_matrix).any()
+        max_inf = torch.isposinf(cost_matrix).any()
+    except AttributeError:
+        # compat. with pytorch<=1.6
+        min_inf = torch.isinf(torch.clamp(cost_matrix, max=0.0)).any()
+        max_inf = torch.isinf(torch.clamp(cost_matrix, min=0.0)).any()
+
     if min_inf and max_inf:
+        print(cost_matrix)
         raise ValueError("matrix contains both inf and -inf")
 
     if min_inf or max_inf:

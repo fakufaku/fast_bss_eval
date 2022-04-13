@@ -19,9 +19,13 @@
 # SOFTWARE.
 
 import math
+from distutils.version import LooseVersion
 from typing import Optional, Tuple, Union
 
 import torch
+
+from .compatibility import (divide_complex_real, einsum_complex, inv, irfft,
+                            rfft)
 
 
 def optimal_symmetric_circulant_precond_column(
@@ -33,7 +37,7 @@ def optimal_symmetric_circulant_precond_column(
     Froebenius norm
     """
     n = col_toeplitz.shape[-1]
-    b = torch.arange(1, n, device=col_toeplitz.device) / n
+    b = torch.arange(1, n, device=col_toeplitz.device) / float(n)
     w = col_toeplitz[..., 1:] * b.flip(dims=(-1,))
     col_circ = torch.cat((col_toeplitz[..., :1], w + w.flip(dims=(-1,))), dim=-1)
     return col_circ
@@ -56,12 +60,12 @@ def optimal_nonsymmetric_circulant_precond_column(
     [s_0, s_{-1}, ..., s_{-n+1}]
     """
     if dim is not None:
-        r = r.moveaxis(dim, -1)
+        r = r.transpose(dim, -1)
 
     if n is None:
         n = (r.shape[-1] + 1) // 2
 
-    b = torch.arange(1, n, device=r.device) / n
+    b = torch.arange(1, n, device=r.device) / float(n)
 
     # s2 = r[..., 1:n]
     # s1 = r[..., -n + 1 :]
@@ -73,7 +77,7 @@ def optimal_nonsymmetric_circulant_precond_column(
     c = torch.cat((r[..., :1], w), dim=-1)
 
     if dim is not None:
-        c = c.moveaxis(-1, dim)
+        c = c.transpose(dim, -1)
 
     return c
 
@@ -85,9 +89,14 @@ class CirculantPreconditionerOperator:
 
     def __init__(self, toeplitz_col: torch.Tensor):
         col_precond = optimal_symmetric_circulant_precond_column(toeplitz_col)
-        C = torch.fft.rfft(col_precond, dim=-1)
+
+        C = rfft(col_precond, dim=-1)
         # complex pointwise inverse
-        self.C = C.conj() / torch.clamp(C.real**2 + C.imag**2, min=1e-6)
+        self.C = divide_complex_real(
+            C, torch.clamp(C.real ** 2 + C.imag ** 2, min=1e-6)
+        )
+        self.C = self.C.conj()
+
         self.n = col_precond.shape[-1]
 
         self._shape = col_precond.shape[:-1] + (self.n, self.n)
@@ -103,9 +112,10 @@ class CirculantPreconditionerOperator:
     def __matmul__(self, lhs: torch.Tensor) -> torch.Tensor:
 
         if lhs.ndim == self.ndim:
+
             assert lhs.shape[-2] == self.shape[-1]
-            return torch.fft.irfft(
-                self.C[..., None] * torch.fft.rfft(lhs, n=self.n, dim=-2),
+            return irfft(
+                self.C[..., None] * rfft(lhs, n=self.n, dim=-2),
                 n=self.n,
                 dim=-2,
             )
@@ -130,7 +140,7 @@ class SymmetricToeplitzOperator:
         circ_col = torch.cat(
             (col, col.new_zeros(pad_shape), col[..., 1:].flip(dims=(-1,))), dim=-1
         )
-        self.Cforward = torch.fft.rfft(circ_col, dim=-1)
+        self.Cforward = rfft(circ_col, dim=-1)
 
         self._shape = col.shape + (col.shape[-1],)
         self.n_col = n_col
@@ -147,8 +157,8 @@ class SymmetricToeplitzOperator:
     def __matmul__(self, lhs: torch.Tensor) -> torch.Tensor:
         if lhs.ndim == self.ndim:
             assert lhs.shape[-2] == self.shape[-1]
-            Y = torch.fft.rfft(lhs, n=self.n_fft, dim=-2)
-            y = torch.fft.irfft(Y * self.Cforward[..., None], n=self.n_fft, dim=-2)
+            Y = rfft(lhs, n=self.n_fft, dim=-2)
+            y = irfft(Y * self.Cforward[..., None], n=self.n_fft, dim=-2)
             return y[..., : self.n_col, :]
 
         else:
@@ -171,10 +181,10 @@ class BlockCirculantPreconditionerOperator:
         col_precond = optimal_nonsymmetric_circulant_precond_column(
             toeplitz_col, dim=-3
         )
-        C = torch.fft.rfft(col_precond, dim=-3)
+        C = rfft(col_precond, dim=-3)
 
         # complex pointwise inverse
-        self.C = torch.linalg.inv(C)
+        self.C = inv(C)
         self.n = col_precond.shape[-3]
 
         self._shape = col_precond.shape[:-1] + (
@@ -198,9 +208,13 @@ class BlockCirculantPreconditionerOperator:
         )
 
         lhs = lhs.reshape(lhs.shape[:-2] + (-1, self.C.shape[-1]) + lhs.shape[-1:])
-        lhs = torch.fft.rfft(lhs, n=self.n, dim=-3)
-        prod = torch.einsum("...rc,...cm->...rm", self.C, lhs)
-        y = torch.fft.irfft(prod, n=self.n, dim=-3)
+        lhs = rfft(lhs, n=self.n, dim=-3)
+        try:
+            prod = torch.einsum("...rc,...cm->...rm", self.C, lhs)
+        except RuntimeError:
+            # compat torch <= 1.6
+            prod = einsum_complex("...rc,...cm->...rm", self.C, lhs)
+        y = irfft(prod, n=self.n, dim=-3)
         y = y.reshape(lhs.shape[:-3] + (-1,) + lhs.shape[-1:])
 
         return y
@@ -238,7 +252,7 @@ class BlockToeplitzOperator:
             ),
             dim=-3,
         )
-        self.Cforward = torch.fft.rfft(circ_col, dim=-3)
+        self.Cforward = rfft(circ_col, dim=-3)
 
         self._n_block_rows = col.shape[-2]
         self._n_block_cols = col.shape[-1]
@@ -267,9 +281,13 @@ class BlockToeplitzOperator:
         )
         # lhs.shape = (..., n_toeplitz, n_block_cols, n_lhs)
         lhs = lhs.reshape(lhs.shape[:-2] + (-1, self._n_block_cols) + lhs.shape[-1:])
-        Y = torch.fft.rfft(lhs, n=self.n_fft, dim=-3)
-        prod = torch.einsum("...rc,...cm->...rm", self.Cforward, Y)
-        y = torch.fft.irfft(prod, n=self.n_fft, dim=-3)
+        Y = rfft(lhs, n=self.n_fft, dim=-3)
+        try:
+            prod = torch.einsum("...rc,...cm->...rm", self.Cforward, Y)
+        except RuntimeError:
+            prod = einsum_complex("...rc,...cm->...rm", self.Cforward, Y)
+
+        y = irfft(prod, n=self.n_fft, dim=-3)
 
         # truncate output
         y = y[..., : self._n_toeplitz, :, :]
@@ -286,7 +304,10 @@ class IdentityOperator:
 
 
 def inner_prod(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-    return torch.einsum("...cd,...cd->...d", a.conj(), b)
+    try:
+        return torch.einsum("...cd,...cd->...d", a.conj(), b)
+    except RuntimeError:
+        return einsum_complex("...cd,...cd->...d", a.conj(), b)
 
 
 def conjugate_gradient(

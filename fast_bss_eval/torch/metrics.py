@@ -24,13 +24,10 @@ from typing import Optional, Tuple
 import torch
 
 from .cgd import block_toeplitz_conjugate_gradient, toeplitz_conjugate_gradient
-from .helpers import (
-    _coherence_to_neg_sdr,
-    _normalize,
-    _remove_mean,
-    _solve_permutation,
-)
-from .linalg import toeplitz, block_toeplitz
+from .compatibility import irfft, rfft, solve
+from .helpers import (_coherence_to_neg_sdr, _normalize, _remove_mean,
+                      _solve_permutation)
+from .linalg import block_toeplitz, toeplitz
 
 
 def square_cosine_metrics_length_one_filter(
@@ -65,7 +62,7 @@ def square_cosine_metrics_length_one_filter(
         acm = torch.einsum("...cn,...dn->...cd", ref, ref)
         if load_diag is not None:
             acm = acm + torch.eye(acm.shape[-1]) * load_diag
-        sol = torch.linalg.solve(acm, xcorr)
+        sol = solve(acm, xcorr)
         coh_sar = torch.einsum("...lc,...lc->...c", xcorr, sol)
 
         if pairwise:
@@ -115,21 +112,21 @@ def compute_stats(
     max_len = max(x.shape[-1], y.shape[-1])
     n_fft = 2 ** math.ceil(math.log2(x.shape[-1] + max_len - 1))
 
-    X = torch.fft.rfft(x, n=n_fft, dim=-1)
-    Y = torch.fft.rfft(y, n=n_fft, dim=-1)
+    X = rfft(x, n=n_fft, dim=-1)
+    Y = rfft(y, n=n_fft, dim=-1)
 
     # autocorrelation function
-    acf = torch.fft.irfft(X.real**2 + X.imag**2, n=n_fft)
+    acf = irfft(X.real ** 2 + X.imag ** 2, n=n_fft)
 
     # cross-correlation
     if pairwise:
         XY = torch.einsum("...cn,...dn->...cnd", X.conj(), Y)
-        xcorr = torch.fft.irfft(XY, n=n_fft, dim=-2)
+        xcorr = irfft(XY, n=n_fft, dim=-2)
         return acf[..., :length], xcorr[..., :length, :]
 
     else:
         XY = X.conj() * Y
-        xcorr = torch.fft.irfft(XY, n=n_fft, dim=-1)
+        xcorr = irfft(XY, n=n_fft, dim=-1)
         return acf[..., :length], xcorr[..., :length]
 
 
@@ -165,17 +162,17 @@ def compute_stats_2(
     max_len = max(x.shape[-1], y.shape[-1])
     n_fft = 2 ** math.ceil(math.log2(x.shape[-1] + max_len - 1))
 
-    X = torch.fft.rfft(x, n=n_fft, dim=-1)
-    Y = torch.fft.rfft(y, n=n_fft, dim=-1)
+    X = rfft(x, n=n_fft, dim=-1)
+    Y = rfft(y, n=n_fft, dim=-1)
 
     # autocorrelation function
     prod = torch.einsum("...cn,...dn->...ncd", X, X.conj())
-    acf = torch.fft.irfft(prod, n=n_fft, dim=-3)
+    acf = irfft(prod, n=n_fft, dim=-3)
     acf = torch.cat([acf[..., :length, :, :], acf[..., -length:, :, :]], dim=-3)
 
     # cross-correlation
     XY = torch.einsum("...cn,...dn->...ncd", X.conj(), Y)
-    xcorr = torch.fft.irfft(XY, n=n_fft, dim=-3)
+    xcorr = irfft(XY, n=n_fft, dim=-3)
     xcorr = xcorr[..., :length, :, :]
 
     return acf, xcorr
@@ -266,7 +263,7 @@ def sdr_loss(
         if use_cg_iter is None:
             # regular matrix solver
             R_mat = toeplitz(acf)
-            sol = torch.linalg.solve(R_mat, xcorr)
+            sol = solve(R_mat, xcorr)
         else:
             # use preconditioned conjugate gradient
             sol = toeplitz_conjugate_gradient(acf, xcorr, n_iter=use_cg_iter)
@@ -520,28 +517,27 @@ def square_cosine_metrics(
     # xcorr.shape = (..., filter_length, n_ref, n_est)
     acf, xcorr = compute_stats_2(ref, est, length=filter_length)
 
-    diag_indices = list(range(ref.shape[-2]))
-
     if load_diag is not None:
         # the diagonal factor of the Toeplitz matrix is the first
         # coefficient of the acf
-        acf[..., 0, diag_indices, diag_indices] += load_diag
+        diag_view = torch.diagonal(acf[..., 0, :, :], dim1=-2, dim2=-1)
+        diag_view += load_diag
 
     # solve for the SDR
-    acf_sdr = acf[..., diag_indices, diag_indices]
+    acf_sdr = torch.diagonal(acf, dim1=-2, dim2=-1)
     acf_sdr = acf_sdr.transpose(-2, -1)
     acf_sdr = acf_sdr[..., :filter_length]
 
     if pairwise:
         xcorr_sdr = xcorr.transpose(-3, -2)
     else:
-        xcorr_sdr = xcorr[..., :, diag_indices, diag_indices].transpose(-2, -1)
+        xcorr_sdr = torch.diagonal(xcorr, dim1=-2, dim2=-1).transpose(-2, -1)
 
     # solve for the optimal filter
     if use_cg_iter is None:
         # regular matrix solver
         R_mat = toeplitz(acf_sdr)
-        sol = torch.linalg.solve(R_mat, xcorr_sdr)
+        sol = solve(R_mat, xcorr_sdr)
     else:
         # use preconditioned conjugate gradient
         sol = toeplitz_conjugate_gradient(acf_sdr, xcorr_sdr, n_iter=use_cg_iter)
@@ -558,7 +554,7 @@ def square_cosine_metrics(
     xcorr = xcorr.reshape(xcorr.shape[:-3] + (-1,) + xcorr.shape[-1:])
     if use_cg_iter is None:
         R_mat = block_toeplitz(acf)
-        sol = torch.linalg.solve(R_mat, xcorr)
+        sol = solve(R_mat, xcorr)
     else:
         if pairwise:
             x0 = sol
