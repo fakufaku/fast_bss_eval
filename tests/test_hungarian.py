@@ -1,10 +1,10 @@
-import pytest
-import torch
-import numpy as np
-from scipy.optimize import linear_sum_assignment
 import fast_bss_eval
 import fast_bss_eval.torch.hungarian as hungarian
+import numpy as np
+import pytest
+import torch
 from fast_bss_eval.torch.helpers import _linear_sum_assignment_with_inf
+from scipy.optimize import linear_sum_assignment
 
 
 @pytest.mark.parametrize("seed", [0, 1, 2, 3, 4, 5])
@@ -32,7 +32,8 @@ def test_nan(seed, backend, n_chan=2, n_samples=4000):
     ref = torch.zeros((n_chan, n_samples)).normal_()
 
     # add one nan
-    est[0, n_samples // 2] = torch.nan
+    # float("nan") is more backward compatible than torch.nan
+    est[0, n_samples // 2] = float("nan")
 
     if backend == "numpy":
         est = est.numpy()

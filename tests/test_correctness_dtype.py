@@ -1,9 +1,8 @@
-import pytest
-import numpy as np
-import torch
-import mir_eval
-
 import fast_bss_eval
+import mir_eval
+import numpy as np
+import pytest
+import torch
 
 
 def to_numpy(x):
