@@ -25,8 +25,7 @@ import torch
 
 from .cgd import block_toeplitz_conjugate_gradient, toeplitz_conjugate_gradient
 from .compatibility import einsum, irfft, rfft, solve
-from .helpers import (_coherence_to_neg_sdr, _normalize, _remove_mean,
-                      _solve_permutation)
+from .helpers import _coherence_to_neg_sdr, _normalize, _remove_mean, _solve_permutation
 from .linalg import block_toeplitz, toeplitz
 
 
@@ -56,7 +55,7 @@ def square_cosine_metrics_length_one_filter(
         coh_sdr = xcorr
     else:
         coh_sdr = torch.einsum("...n,...n->...", ref, est)
-    coh_sdr = coh_sdr ** 2
+    coh_sdr = coh_sdr**2
 
     if with_coh_sar:
         acm = torch.einsum("...cn,...dn->...cd", ref, ref)
@@ -116,7 +115,7 @@ def compute_stats(
     Y = rfft(y, n=n_fft, dim=-1)
 
     # autocorrelation function
-    X_mag = X.real ** 2 + X.imag ** 2
+    X_mag = X.real**2 + X.imag**2
     acf = irfft(X_mag, n=n_fft)
 
     # cross-correlation

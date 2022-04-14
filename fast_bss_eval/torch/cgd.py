@@ -91,7 +91,7 @@ class CirculantPreconditionerOperator:
         C = rfft(col_precond, dim=-1)
 
         # complex pointwise inverse
-        self.C = C / torch.clamp(C.real ** 2 + C.imag ** 2, min=1e-6)
+        self.C = C / torch.clamp(C.real**2 + C.imag**2, min=1e-6)
         self.C = self.C.conj()
 
         self.n = col_precond.shape[-1]
