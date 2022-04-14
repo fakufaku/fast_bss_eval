@@ -24,7 +24,7 @@ from typing import Optional, Tuple
 import torch
 
 from .cgd import block_toeplitz_conjugate_gradient, toeplitz_conjugate_gradient
-from .compatibility import irfft, rfft, solve
+from .compatibility import einsum, irfft, rfft, solve
 from .helpers import (_coherence_to_neg_sdr, _normalize, _remove_mean,
                       _solve_permutation)
 from .linalg import block_toeplitz, toeplitz
@@ -56,7 +56,7 @@ def square_cosine_metrics_length_one_filter(
         coh_sdr = xcorr
     else:
         coh_sdr = torch.einsum("...n,...n->...", ref, est)
-    coh_sdr = torch.square(coh_sdr)
+    coh_sdr = coh_sdr ** 2
 
     if with_coh_sar:
         acm = torch.einsum("...cn,...dn->...cd", ref, ref)
@@ -116,11 +116,12 @@ def compute_stats(
     Y = rfft(y, n=n_fft, dim=-1)
 
     # autocorrelation function
-    acf = irfft(X.real ** 2 + X.imag ** 2, n=n_fft)
+    X_mag = X.real ** 2 + X.imag ** 2
+    acf = irfft(X_mag, n=n_fft)
 
     # cross-correlation
     if pairwise:
-        XY = torch.einsum("...cn,...dn->...cnd", X.conj(), Y)
+        XY = einsum("...cn,...dn->...cnd", X.conj(), Y)
         xcorr = irfft(XY, n=n_fft, dim=-2)
         return acf[..., :length], xcorr[..., :length, :]
 
@@ -166,12 +167,12 @@ def compute_stats_2(
     Y = rfft(y, n=n_fft, dim=-1)
 
     # autocorrelation function
-    prod = torch.einsum("...cn,...dn->...ncd", X, X.conj())
+    prod = einsum("...cn,...dn->...ncd", X, X.conj())
     acf = irfft(prod, n=n_fft, dim=-3)
     acf = torch.cat([acf[..., :length, :, :], acf[..., -length:, :, :]], dim=-3)
 
     # cross-correlation
-    XY = torch.einsum("...cn,...dn->...ncd", X.conj(), Y)
+    XY = einsum("...cn,...dn->...ncd", X.conj(), Y)
     xcorr = irfft(XY, n=n_fft, dim=-3)
     xcorr = xcorr[..., :length, :, :]
 

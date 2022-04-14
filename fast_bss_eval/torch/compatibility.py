@@ -24,19 +24,31 @@ whose API differs in older versions.
 - irfft
 - solve
 - division of complex by real
+- einsum
+For torch<=1.5 the torch_complex library is used.
 """
 try:
     from packaging.version import Version
 except [ImportError, ModuleNotFoundError]:
     from distutils.version import LooseVersion as Version
 
+from torch_complex import ComplexTensor
+
 import torch
 
-is_torch_1_7_plus = Version(torch.__version__) >= Version("1.7.0")
 is_torch_1_8_plus = Version(torch.__version__) >= Version("1.8.0")
 
+if not is_torch_1_8_plus:
+    try:
+        import torch_complex
+    except ImportError:
+        raise ImportError(
+            "When using torch<=1.7, the package torch_complex is required."
+            " Install it as `pip install torch_complex`"
+        )
+
 # We define wrappers for rfft /irfft for older version of torch
-if not is_torch_1_7_plus:
+if not is_torch_1_8_plus:
 
     def rfft(x, n=None, dim=-1):
 
@@ -49,7 +61,8 @@ if not is_torch_1_7_plus:
                 x = x[..., :n]
 
         x = torch.rfft(x, 1)
-        x = torch.view_as_complex(x)
+
+        x = torch_complex.ComplexTensor(x[..., 0], x[..., 1])
 
         x = x.transpose(dim, -1)
 
@@ -58,21 +71,28 @@ if not is_torch_1_7_plus:
     def irfft(x, n=None, dim=-1):
         x = x.transpose(dim, -1)
 
-        if x.dtype not in [torch.complex64, torch.complex128]:
-            x = 1j * x
+        if isinstance(x, torch_complex.ComplexTensor):
+            x = torch.stack((x.real, x.imag), dim=-1)
+        else:
+            x = torch.stack((x, x.new_zeros(x.shape)), dim=-1)
+
+        # x is now in the old pytorch complex format with the last
+        # dimension of size two containing real/imag separately
 
         if n is not None:
             signal_sizes = torch.Size([n])
             n_freq = n // 2 + 1
-            if n_freq < x.shape[-1]:
-                x = x[..., :n_freq]
-            elif n_freq > x.shape[-1]:
-                x = torch.nn.functional.pad(x, (0, n_freq - x.shape[-1]))
+            if n_freq < x.shape[-2]:
+                x = x[..., :n_freq, :]
+            elif n_freq > x.shape[-2]:
+                x = torch.nn.functional.pad(x, (0, n_freq - x.shape[-2], 0, 0))
 
         else:
             signal_sizes = torch.Size([(x.shape[-1] - 1) * 2])
 
-        x = torch.irfft(torch.view_as_real(x), 1, signal_sizes=signal_sizes)
+        x = torch.irfft(x, 1, signal_sizes=signal_sizes)
+
+        # x is now a real tensor here
 
         x = x.transpose(dim, -1)
         return x
@@ -83,8 +103,12 @@ else:
     def rfft(*args, **kwargs):
         return torch.fft.rfft(*args, **kwargs)
 
-    def irfft(*args, **kwargs):
-        return torch.fft.irfft(*args, **kwargs)
+    def irfft(x, *args, **kwargs):
+        # we add the check here because in torch>=1.7, if the input to
+        # irfft is a real tensor, a spurious warning is generated
+        if x.dtype not in [torch.complex64, torch.complex128]:
+            x = x + 0.0j
+        return torch.fft.irfft(x, *args, **kwargs)
 
 
 # We define wrappers for solve and divide for older version of torch
@@ -103,11 +127,16 @@ if not is_torch_1_8_plus:
         return x
 
     def inv(A):
-        return torch.inverse(A)
+        if isinstance(A, torch_complex.ComplexTensor):
+            return A.inverse()
+        else:
+            return torch.inverse(A)
 
-    def divide_complex_real(val_complex, val_real):
-        val_complex = torch.view_as_real(val_complex)
-        return torch.view_as_complex(val_complex / val_real[..., None])
+    def einsum(expr, *operands):
+        if isinstance(operands[0], torch_complex.ComplexTensor):
+            return torch_complex.einsum(expr, *operands)
+        else:
+            return torch.einsum(expr, *operands)
 
 else:
 
@@ -117,8 +146,8 @@ else:
     def inv(*args, **kwargs):
         return torch.linalg.inv(*args, **kwargs)
 
-    def divide_complex_real(val_complex, val_real):
-        return val_complex / val_real
+    def einsum(*args, **kwargs):
+        return torch.einsum(*args, **kwargs)
 
 
 def einsum_complex(expr, op1, op2):

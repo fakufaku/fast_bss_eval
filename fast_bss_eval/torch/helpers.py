@@ -122,32 +122,36 @@ def _linear_sum_assignment_with_inf(
     if cost_matrix.numel() == 0:
         return torch.zeros(0, dtype=torch.int64), torch.zeros(0, dtype=torch.int64)
 
-    try:
-        min_inf = torch.isneginf(cost_matrix).any()
-        max_inf = torch.isposinf(cost_matrix).any()
-    except AttributeError:
-        # compat. with pytorch<=1.6
-        min_inf = torch.isinf(torch.clamp(cost_matrix, max=0.0)).any()
-        max_inf = torch.isinf(torch.clamp(cost_matrix, min=0.0)).any()
+    # we don't need to keep track of the gradient while solving the permutation
+    with torch.no_grad():
+        try:
+            min_inf = torch.isneginf(cost_matrix).any()
+            max_inf = torch.isposinf(cost_matrix).any()
+        except AttributeError:
+            # compat. with pytorch<=1.6
+            min_inf = torch.isinf(torch.clamp(cost_matrix, max=0.0)).any()
+            max_inf = torch.isinf(torch.clamp(cost_matrix, min=0.0)).any()
 
-    if min_inf and max_inf:
-        print(cost_matrix)
-        raise ValueError("matrix contains both inf and -inf")
+        if min_inf and max_inf:
+            print(cost_matrix)
+            raise ValueError("matrix contains both inf and -inf")
 
-    if min_inf or max_inf:
-        cost_matrix = cost_matrix.clone()
-        values = cost_matrix[~torch.isinf(cost_matrix)]
-        m = values.min()
-        M = values.max()
-        n = min(cost_matrix.shape)
-        # strictly positive constant even when added
-        # to elements of the cost matrix
-        positive = n * (M - m + torch.abs(M) + torch.abs(m) + 1)
-        if max_inf:
-            place_holder = (M + (n - 1) * (M - m)) + positive
-        if min_inf:
-            place_holder = (m + (n - 1) * (m - M)) - positive
+        if min_inf or max_inf:
+            cost_matrix = cost_matrix.clone()
+            values = cost_matrix[~torch.isinf(cost_matrix)]
+            m = values.min()
+            M = values.max()
+            n = min(cost_matrix.shape)
+            # strictly positive constant even when added
+            # to elements of the cost matrix
+            positive = n * (M - m + torch.abs(M) + torch.abs(m) + 1)
+            if max_inf:
+                place_holder = (M + (n - 1) * (M - m)) + positive
+            if min_inf:
+                place_holder = (m + (n - 1) * (m - M)) - positive
 
-        cost_matrix[torch.isinf(cost_matrix)] = place_holder
+            cost_matrix[torch.isinf(cost_matrix)] = place_holder
 
-    return linear_sum_assignment(cost_matrix)
+        ret = linear_sum_assignment(cost_matrix)
+
+    return ret

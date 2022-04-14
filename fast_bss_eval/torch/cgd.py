@@ -24,8 +24,7 @@ from typing import Optional, Tuple, Union
 
 import torch
 
-from .compatibility import (divide_complex_real, einsum_complex, inv, irfft,
-                            rfft)
+from .compatibility import einsum, einsum_complex, inv, irfft, rfft
 
 
 def optimal_symmetric_circulant_precond_column(
@@ -91,10 +90,9 @@ class CirculantPreconditionerOperator:
         col_precond = optimal_symmetric_circulant_precond_column(toeplitz_col)
 
         C = rfft(col_precond, dim=-1)
+
         # complex pointwise inverse
-        self.C = divide_complex_real(
-            C, torch.clamp(C.real ** 2 + C.imag ** 2, min=1e-6)
-        )
+        self.C = C / torch.clamp(C.real ** 2 + C.imag ** 2, min=1e-6)
         self.C = self.C.conj()
 
         self.n = col_precond.shape[-1]
@@ -209,11 +207,7 @@ class BlockCirculantPreconditionerOperator:
 
         lhs = lhs.reshape(lhs.shape[:-2] + (-1, self.C.shape[-1]) + lhs.shape[-1:])
         lhs = rfft(lhs, n=self.n, dim=-3)
-        try:
-            prod = torch.einsum("...rc,...cm->...rm", self.C, lhs)
-        except RuntimeError:
-            # compat torch <= 1.6
-            prod = einsum_complex("...rc,...cm->...rm", self.C, lhs)
+        prod = einsum("...rc,...cm->...rm", self.C, lhs)
         y = irfft(prod, n=self.n, dim=-3)
         y = y.reshape(lhs.shape[:-3] + (-1,) + lhs.shape[-1:])
 
@@ -282,11 +276,7 @@ class BlockToeplitzOperator:
         # lhs.shape = (..., n_toeplitz, n_block_cols, n_lhs)
         lhs = lhs.reshape(lhs.shape[:-2] + (-1, self._n_block_cols) + lhs.shape[-1:])
         Y = rfft(lhs, n=self.n_fft, dim=-3)
-        try:
-            prod = torch.einsum("...rc,...cm->...rm", self.Cforward, Y)
-        except RuntimeError:
-            prod = einsum_complex("...rc,...cm->...rm", self.Cforward, Y)
-
+        prod = einsum("...rc,...cm->...rm", self.Cforward, Y)
         y = irfft(prod, n=self.n_fft, dim=-3)
 
         # truncate output
@@ -304,10 +294,7 @@ class IdentityOperator:
 
 
 def inner_prod(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-    try:
-        return torch.einsum("...cd,...cd->...d", a.conj(), b)
-    except RuntimeError:
-        return einsum_complex("...cd,...cd->...d", a.conj(), b)
+    return einsum("...cd,...cd->...d", a.conj(), b)
 
 
 def conjugate_gradient(
