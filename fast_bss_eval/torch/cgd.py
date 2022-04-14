@@ -19,7 +19,6 @@
 # SOFTWARE.
 
 import math
-from distutils.version import LooseVersion
 from typing import Optional, Tuple, Union
 
 import torch
