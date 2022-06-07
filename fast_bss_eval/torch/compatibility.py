@@ -32,8 +32,6 @@ try:
 except [ImportError, ModuleNotFoundError]:
     from distutils.version import LooseVersion as Version
 
-from torch_complex import ComplexTensor
-
 import torch
 
 is_torch_1_8_plus = Version(torch.__version__) >= Version("1.8.0")

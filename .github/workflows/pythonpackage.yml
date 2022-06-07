@@ -13,28 +13,36 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.7, 3.8, 3.9, "3.10"]
         torch-version: [1.11]
+        torch-complex-req: [""]
         include:
             - os: ubuntu-latest
               python-version: 3.8
               torch-version: 1.4
+              torch-complex-req: "_torch_le_1_8"
             - os: ubuntu-latest
               python-version: 3.8
               torch-version: 1.5
+              torch-complex-req: "_torch_le_1_8"
             - os: ubuntu-latest
               python-version: 3.8
               torch-version: 1.6
+              torch-complex-req: "_torch_le_1_8"
             - os: ubuntu-latest
               python-version: 3.8
               torch-version: 1.7
+              torch-complex-req: "_torch_le_1_8"
             - os: ubuntu-latest
               python-version: 3.8
               torch-version: 1.8
+              torch-complex-req: "_torch_le_1_8"
             - os: ubuntu-latest
               python-version: 3.8
               torch-version: 1.9
+              torch-complex-req: ""
             - os: ubuntu-latest
               python-version: 3.9
               torch-version: "1.10"
+              torch-complex-req: ""
 
     steps:
     - uses: actions/checkout@v2
@@ -51,7 +59,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install -r tests/requirements.txt
+        python -m pip install -r tests/requirements${{ matrix.torch-complex-req }}.txt
         python -m pip install -U torch==${{ matrix.torch-version }}
         pip install -e .
     - name: Test and coverage with pytest
