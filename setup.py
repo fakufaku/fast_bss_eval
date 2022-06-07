@@ -11,7 +11,7 @@ except Exception:
 
 setup(
     name="fast_bss_eval",
-    version="0.1.3",
+    version="0.1.4",
     description="Package for fast computation of BSS Eval metrics for source separation",
     long_description=long_description,
     long_description_content_type="text/markdown",  # text/plain, text/x-rst, text/markdown
