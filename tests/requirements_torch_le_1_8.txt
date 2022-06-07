@@ -1,6 +1,7 @@
 numpy
 scipy
 torch>=1.4
+torch_complex
 mir_eval
 pytest
 pytest-cov
