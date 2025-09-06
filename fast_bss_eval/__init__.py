@@ -323,9 +323,9 @@ def bss_eval_sources(
     Parameters
     ----------
     ref:
-        The estimated signals, ``shape == (..., n_channels_est, n_samples)``
-    est:
         The groundtruth reference signals, ``shape ==  (..., n_channels_ref, n_samples)``
+    est:
+        The estimated signals, ``shape == (..., n_channels_est, n_samples)``
     filter_length:
         The length of the distortion filter allowed (default: ``512``)
     use_cg_iter:
