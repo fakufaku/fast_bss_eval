@@ -44,7 +44,7 @@ pip install -e .
 
 ### Use
 
-Assuming you have multichannel signals for the estmated and reference sources
+Assuming you have multichannel signals for the estimated and reference sources
 stored in wav format files names ``my_estimate_file.wav`` and
 ``my_reference_file.wav``, respectively, you can quickly evaluate the bss_eval
 metrics as follows.
